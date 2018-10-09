@@ -120,16 +120,35 @@ class solitaire(Problem):
         """Needed for informed search."""
         return 0
 
-b1 = [["O","O","O","X"],
- ["O","O","O","O"],
- ["O","_","O","O"],
- ["O","O","O","O"]]
+b1 = [["O","O","O","X","X","X"],
+ ["O","_","O","O","O","O"],
+ ["O","O","O","O","O","O"],
+ ["O","O","O","O","O","O"]]
 
 
 # print("\nBoard moves: " + str(board_moves(b1)))
 # print("\nPerformed move: " + str(board_perform_move(b1,[(0, 2), (0, 0)])))
 # print("\nb1: " + str(b1))
 
-# print(depth_first_tree_search(solitaire(b1)).solution())
+sol2 = recursive_best_first_search(solitaire(b1)).solution()
+# sol1 = depth_limited_search(solitaire(b1)).solution()
 
-compare_searchers([solitaire(b1)], 'idk')
+# print(str(sol2) + "\n\n")
+print(str(sol1) + "\n\n")
+
+#
+# b2 = deepcopy(b1)
+#
+# for move in sol2:
+#     b2 = board_perform_move(b2,move)
+#
+# print(str(b2) + "\n\n")
+#
+
+for move in sol1:
+    b1 = board_perform_move(b1,move)
+
+print(str(b1) + "\n\n")
+
+
+# compare_searchers([solitaire(b1)], 'idk')
