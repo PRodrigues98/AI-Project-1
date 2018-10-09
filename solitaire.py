@@ -73,27 +73,63 @@ def board_perform_move(board, move):
 
     return new_board
 
+class sol_state:
+
+    def __init__(self, board, num_pegs=0):
+        self.board = board
+        self.num_pegs = num_pegs
+
+        if num_pegs == 0:
+            for row in board:
+                for content in row:
+                    if is_peg(content):
+                        self.num_pegs += 1
+
+    def __lt__(self, state):
+        return True
+
+    def get_board(self):
+        return self.board
+
+    def get_num_pegs(self):
+        return self.num_pegs
 
 class solitaire(Problem):
     """   Models a Solitaire problem as a satisfaction problem.
     A solution cannot have more than 1 peg left on the board.   """
 
     def __init__(self, board):
-        Problem.__init__(board)
+        super().__init__(sol_state(board))
         self.board = board
 
-    # def actions(self, state):
-    #
-    # def result(self, state, action):
-    # def goal_test(self, state):
-    # def path_cost(self, c, state1, action, state2):
-    # def h(self, node):
-    # 	"""Needed for informed search."""
+    def actions(self, state):
+        board = state.get_board()
+        return board_moves(board)
+
+    def result(self, state, action):
+        board = state.get_board()
+        return sol_state(board_perform_move(board, action), state.get_num_pegs()-1)
+
+    def goal_test(self, state):
+        return state.get_num_pegs() == 1
+
+    def path_cost(self, c, state1, action, state2):
+        return c + 1
+
+    def h(self, node):
+        """Needed for informed search."""
+        return 0
+
+b1 = [["O","O","O","X"],
+ ["O","O","O","O"],
+ ["O","_","O","O"],
+ ["O","O","O","O"]]
 
 
-b1 = [["_","O","O","O","_"], ["O","_","O","_","O"], ["_","O","_","O","_"],
- ["O","_","O","_","_"], ["_","O","_","_","_"]]
+# print("\nBoard moves: " + str(board_moves(b1)))
+# print("\nPerformed move: " + str(board_perform_move(b1,[(0, 2), (0, 0)])))
+# print("\nb1: " + str(b1))
 
-print("\nBoard moves: " + str(board_moves(b1)))
-print("\nPerformed move: " + str(board_perform_move(b1,[(0, 2), (0, 0)])))
-print("\nb1: " + str(b1))
+# print(depth_first_tree_search(solitaire(b1)).solution())
+
+compare_searchers([solitaire(b1)], 'idk')
