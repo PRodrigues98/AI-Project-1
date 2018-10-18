@@ -49,16 +49,16 @@ def board_moves(board):
         for column in range(len(board[row])):
             if is_peg(board[row][column]):
                 if column > 1 and is_peg(board[row][column - 1]) and is_empty(board[row][column - 2]):
-                    new_move = make_move(make_pos(row,column), make_pos(row,column - 2))
+                    new_move = make_move(make_pos(row, column), make_pos(row, column - 2))
                     moves.append(new_move)
                 if column < len(board[row]) - 2 and is_peg(board[row][column + 1]) and is_empty(board[row][column + 2]):
-                    new_move = make_move(make_pos(row,column), make_pos(row,column + 2))
+                    new_move = make_move(make_pos(row, column), make_pos(row, column + 2))
                     moves.append(new_move)
                 if row < len(board) - 2 and is_peg(board[row + 1][column]) and is_empty(board[row + 2][column]):
-                    new_move = make_move(make_pos(row,column), make_pos(row + 2,column))
+                    new_move = make_move(make_pos(row, column), make_pos(row + 2, column))
                     moves.append(new_move)
                 if row > 1 and is_peg(board[row - 1][column]) and is_empty(board[row - 2][column]):
-                    new_move = make_move(make_pos(row,column), make_pos(row - 2,column))
+                    new_move = make_move(make_pos(row, column), make_pos(row - 2, column))
                     moves.append(new_move)
     return moves
 
@@ -74,8 +74,8 @@ def board_perform_move(board, move):
     return new_board
 
 class sol_state:
-
     def __init__(self, board, num_pegs=0):
+        __slot__ = 'board', 'num_pegs'
         self.board = board
         self.num_pegs = num_pegs
 
@@ -86,7 +86,7 @@ class sol_state:
                         self.num_pegs += 1
 
     def __lt__(self, state):
-        return True
+        return self.num_pegs > state.get_num_pegs()
 
     def get_board(self):
         return self.board
@@ -100,6 +100,7 @@ class solitaire(Problem):
 
     def __init__(self, board):
         super().__init__(sol_state(board))
+        __slot__ = 'board'
         self.board = board
 
     def actions(self, state):
@@ -120,21 +121,22 @@ class solitaire(Problem):
         """Needed for informed search."""
         return 0
 
-b1 = [["O","O","O","X","X","X"],
- ["O","_","O","O","O","O"],
- ["O","O","O","O","O","O"],
- ["O","O","O","O","O","O"]]
+
+# b1 = [["O","O","O","X","X","X"],
+# ["O","_","O","O","O","O"],
+# ["O","O","O","O","O","O"],
+# ["O","O","O","O","O","O"]]
 
 
 # print("\nBoard moves: " + str(board_moves(b1)))
 # print("\nPerformed move: " + str(board_perform_move(b1,[(0, 2), (0, 0)])))
 # print("\nb1: " + str(b1))
 
-sol2 = recursive_best_first_search(solitaire(b1)).solution()
+# sol2 = recursive_best_first_search(solitaire(b1)).solution()
 # sol1 = depth_limited_search(solitaire(b1)).solution()
 
 # print(str(sol2) + "\n\n")
-print(str(sol1) + "\n\n")
+# print(str(sol1) + "\n\n")
 
 #
 # b2 = deepcopy(b1)
@@ -145,10 +147,10 @@ print(str(sol1) + "\n\n")
 # print(str(b2) + "\n\n")
 #
 
-for move in sol1:
-    b1 = board_perform_move(b1,move)
+# for move in sol1:
+#     b1 = board_perform_move(b1,move)
 
-print(str(b1) + "\n\n")
+# print(str(b1) + "\n\n")
 
 
 # compare_searchers([solitaire(b1)], 'idk')
