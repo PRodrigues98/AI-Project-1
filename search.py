@@ -404,7 +404,6 @@ def astar_search(problem, h=None):
 
 
 def recursive_best_first_search(problem, h=None):
-    print("hi")
     """[Figure 3.26]"""
     h = memoize(h or problem.h, 'h')
 
