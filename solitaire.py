@@ -146,14 +146,32 @@ def calc_new_isolated(num_isolated, old_board, new_board, move_beg, move_end):
     #print('Action: ', move_beg, move_end)
     #print('Num isolated: ', num_isolated)
     #print('Isolated diff: ', isolated_diff)
-    #printBoard(old_board)
-    #printBoard(new_board)
+    #print_board(old_board)
+    #print_board(new_board)
     #if num_isolated + isolated_diff < 0:
     #    sys.exit('oh nono')
     return num_isolated + isolated_diff
 
 
-def printBoard(board):
+def calc_new_average_distance(average_distance, board, move_beg, move_end):
+
+    move_middle = make_pos((pos_l(move_beg) + pos_l(move_end)) // 2, (pos_c(move_beg) + pos_c(move_end)) // 2)
+
+    list_new_calc = (move_beg, move_middle, move_end)
+
+    for pos in list_new_calc:
+        for row2 in range(len(board)):
+            for column2 in range(len(board[row2])):
+                if is_peg(board[row2][column2]):
+                    if pos_l(pos) == pos_l(move_end) and pos_c(pos) == pos_c(move_end):
+                        average_distance += ((pos_l(pos) - row2) ** 2 + (pos_c(pos) - column2) ** 2) ** 0.5
+                    else:
+                        average_distance -= ((pos_l(pos) - row2) ** 2 + (pos_c(pos) - column2) ** 2) ** 0.5
+
+    return average_distance
+
+
+def print_board(board):
 
     for row in board:
         for content in row:
@@ -163,15 +181,18 @@ def printBoard(board):
 
 
 class sol_state:
-    def __init__(self, board, num_pegs = 0, num_corners = 0, num_same_parity = 0, num_isolated = 0):
-        __slot__ = 'board', 'num_pegs', 'num_corners', 'num_isolated', 'num_same_parity'
+    def __init__(self, board, num_pegs = 0, num_corners = 0, num_same_parity = 0, num_isolated = 0, average_distance = 0):
+        __slot__ = 'board', 'num_pegs', 'num_corners', 'num_isolated', 'num_same_parity', 'average_distance'
         self.board = board
         self.num_pegs = num_pegs
         self.num_corners = num_corners
         self.num_isolated = num_isolated
         self.num_same_parity = num_same_parity
+        self.average_distance = average_distance
 
         if num_pegs == 0:
+            counter = 0
+            average_distance = 0
             for row in range(len(board)):
                 for column in range(len(board[row])):
                     if is_peg(board[row][column]):
@@ -182,6 +203,15 @@ class sol_state:
                             self.num_isolated += 1
                         if column % 2 == row % 2:
                             self.num_same_parity += 1
+                        for row2 in range(len(board)):
+                            for column2 in range(len(board[row2])):
+                                if is_peg(board[row2][column2]) and row != row2 and column != column2:
+                                    average_distance += ((row - row2) ** 2 + (column - column2) ** 2) ** 0.5
+                                    counter += 1
+            self.average_distance = average_distance / self.num_pegs ** 2
+            #print(average_distance / math.factorial(self.num_pegs))
+            #print(counter)
+            #print(math.factorial(self.num_pegs))
             #print("INITIAL Num Pegs: " + str(self.num_pegs) + " Num corners: " + str(self.num_corners) + " Num same parity: " + str(self.num_same_parity)+ " Num isolated: " + str(self.num_isolated))
 
     def __lt__(self, state):
@@ -205,6 +235,8 @@ class sol_state:
     def get_class_difference(self):
         return self.num_same_parity - (self.num_pegs - self.num_same_parity)
 
+    def get_num_average_distance(self):
+        return self.average_distance
 
 class solitaire(Problem):
     """   Models a Solitaire problem as a satisfaction problem.
@@ -227,26 +259,21 @@ class solitaire(Problem):
 
     def result(self, state, action):
         board = state.get_board()
-
-        new_num_pegs = state.get_num_pegs() - 1
-
+        new_board = board_perform_move(board, action)
 
         start = move_initial(action)
         end = move_final(action)
 
         new_num_corners = state.get_num_corners() - is_corner(pos_l(start), pos_c(start), board) + is_corner(pos_l(end), pos_c(end), board)
         new_num_same_parity = state.get_num_same_parity() - (pos_l(start) % 2 != pos_c(start) % 2)
-
-        #print("Num Pegs: " + str(new_num_pegs) + " Num corners: " + str(new_num_corners) + " Num same parity: " + str(new_num_same_parity))
-
-        #print(str(new_num_pegs) + " " + str(state.get_num_same_parity()) + " " + str(pos_l(start)) + " " + str(pos_c(start)))
-
-        new_board = board_perform_move(board, action)
         new_num_isolated = calc_new_isolated(state.get_num_isolated(), board, new_board, start, end)
-        #print("Num Pegs: " + str(new_num_pegs) + " Num corners: " + str(new_num_corners) + " Num same parity: " + str(new_num_same_parity) + " Num isolated: " + str(new_num_isolated) + " Action: " + str(action))
-        #printBoard((board))
 
-        return sol_state(new_board, new_num_pegs, new_num_corners, new_num_same_parity, new_num_isolated)
+        new_average_distance = calc_new_average_distance(state.get_num_average_distance() * (state.get_num_pegs() ** 2), board, start, end) / ((state.get_num_pegs() - 1) ** 2)
+        new_num_pegs = state.get_num_pegs() - 1
+        #print(new_average_distance)
+        #print("Num Pegs: " + str(new_num_pegs) + " Num corners: " + str(new_num_corners) + " Num same parity: " + str(new_num_same_parity) + " Num isolated: " + str(new_num_isolated) + " Action: " + str(action))
+        #print_board((board))
+        return sol_state(new_board, new_num_pegs, new_num_corners, new_num_same_parity, new_num_isolated, new_average_distance)
 
     def goal_test(self, state):
         return state.get_num_pegs() == 1
@@ -257,19 +284,22 @@ class solitaire(Problem):
     def h(self, node):
         """Needed for informed search."""
 
-        board = node.state.get_board()
+        #board = node.state.get_board()
 
-        average_distance = 0
+        #average_distance = 0
+        #counter = 0
 
-        for row1 in range(len(board)):
-            for column1 in range(len(board[row1])):
-                if is_peg(board[row1][column1]):
-                    for row2 in range(len(board)):
-                        for column2 in range(len(board[row2])):
-                            if is_peg(board[row2][column2]):
-                                average_distance += ((row1 - row2) ** 2 + (column1 - column2) ** 2) ** 0.5
-
-        return average_distance / node.state.get_num_pegs() #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
+        #for row1 in range(len(board)):
+        #    for column1 in range(len(board[row1])):
+        #        if is_peg(board[row1][column1]):
+        #            for row2 in range(len(board)):
+        #                for column2 in range(len(board[row2])):
+        #                    if is_peg(board[row2][column2]): #and row1 != row2 and column1 != column2:
+        #                        average_distance += ((row1 - row2) ** 2 + (column1 - column2) ** 2) ** 0.5
+        #                        counter += 1
+        #print(counter)
+        #print(average_distance / counter)
+        return node.state.get_num_average_distance() / (node.state.get_num_pegs() ** 2) # average_distance / counter #  #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
 
 
 
@@ -325,14 +355,12 @@ def greedy_search(problem, h = None):
 # astar_search
 #sol2 = astar_search(solitaire(b1))
 
-#sol2 = greedy_search(solitaire(b1))
-
 #if sol2 != None:
 #    sol2 = sol2.solution()
 #    for move in sol2:
 #        b1 = board_perform_move(b1, move)
 #        print(move)
-#    printBoard(b1)
+#    print_board(b1)
 #    print("\n\n")
 #else:
 #    print("No solution")
