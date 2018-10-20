@@ -120,18 +120,18 @@ def calc_new_isolated(num_isolated, old_board, new_board, move_beg, move_end):
 
     # positions to check
     #     5  3  2
-    #  7  P  P  _  0
+    #  7  P  P  me 0
     #     6  4  1
     pos0 = make_pos(pos_l(move_end) + move_direction_row, pos_c(move_end) + move_direction_column)
-    pos1 = make_pos(pos_l(move_end) - move_direction_column, pos_c(move_end) + move_direction_row)
-    pos2 = make_pos(pos_l(move_end) + move_direction_column, pos_c(move_end) - move_direction_row)
-    pos3 = make_pos(middle_row - move_direction_column, middle_column + move_direction_row)
-    pos4 = make_pos(middle_row + move_direction_column, middle_column - move_direction_row)
-    pos5 = make_pos(pos_l(move_beg) - move_direction_column, pos_c(move_beg) + move_direction_row)
-    pos6 = make_pos(pos_l(move_beg) + move_direction_column, pos_c(move_beg) - move_direction_row)
+    pos1 = make_pos(pos_l(move_end) - move_direction_column, pos_c(move_end) - move_direction_row)
+    pos2 = make_pos(pos_l(move_end) + move_direction_column, pos_c(move_end) + move_direction_row)
+    pos3 = make_pos(middle_row - move_direction_column, middle_column - move_direction_row)
+    pos4 = make_pos(middle_row + move_direction_column, middle_column + move_direction_row)
+    pos5 = make_pos(pos_l(move_beg) - move_direction_column, pos_c(move_beg) - move_direction_row)
+    pos6 = make_pos(pos_l(move_beg) + move_direction_column, pos_c(move_beg) + move_direction_row)
     pos7 = make_pos(pos_l(move_beg) - move_direction_row, pos_c(move_beg) - move_direction_column)
 
-    pos_list = (pos0, pos1, pos2, pos3, pos4, pos5, pos6, pos7)
+    pos_list = (pos0, pos1, pos2, pos3, pos4, pos5, pos6, pos7, move_end)
 
     # old board - 3 checks
     for position in pos_list[:3]:
@@ -141,15 +141,15 @@ def calc_new_isolated(num_isolated, old_board, new_board, move_beg, move_end):
     # new board - 5 checks
     for position in pos_list[3:]:
         if pos_l(position) > 0 and pos_c(position) > 0 and pos_l(position) < len(new_board) and pos_c(position) < len(new_board[0]):
-            isolated_diff += is_peg(new_board[pos_l(position)][pos_c(position)]) and is_isolated(pos_l(position), pos_c(position), new_board) and not is_corner(pos_l(position), pos_c(position), old_board)
+            isolated_diff += is_peg(new_board[pos_l(position)][pos_c(position)]) and is_isolated(pos_l(position), pos_c(position), new_board) and not is_corner(pos_l(position), pos_c(position), new_board)
 
-    print('Action: ', move_beg, move_end)
-    print('Num isolated: ', num_isolated)
-    print('Isolated diff: ', isolated_diff)
-    printBoard(old_board)
-    printBoard(new_board)
-    if num_isolated + isolated_diff < 0:
-        sys.exit('oh nono')
+    #print('Action: ', move_beg, move_end)
+    #print('Num isolated: ', num_isolated)
+    #print('Isolated diff: ', isolated_diff)
+    #printBoard(old_board)
+    #printBoard(new_board)
+    #if num_isolated + isolated_diff < 0:
+    #    sys.exit('oh nono')
     return num_isolated + isolated_diff
 
 
@@ -219,7 +219,7 @@ class solitaire(Problem):
         board = state.get_board()
 
         if abs(state.get_class_difference()) == state.get_num_pegs():
-            print("Crisis averted " + str(state.get_class_difference()) + " " + str(state.get_num_pegs()))
+            #print("Crisis averted " + str(state.get_class_difference()) + " " + str(state.get_num_pegs()))
             return []
         moves = board_moves(board)
         #print('Number of moves PEEEEEeeeeeeeeeeeeeeeeeeEEEEEEEEEEEEEEEPS: ' + str(len(moves)))
@@ -257,10 +257,31 @@ class solitaire(Problem):
     def h(self, node):
         """Needed for informed search."""
 
-        return node.state.get_num_corners() + node.state.get_num_isolated()
+        board = node.state.get_board()
 
-b1=[["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
-sol2 = best_first_graph_search(solitaire(b1),solitaire(b1).h)
+        average_distance = 0
+
+        for row1 in range(len(board)):
+            for column1 in range(len(board[row1])):
+                if is_peg(board[row1][column1]):
+                    for row2 in range(len(board)):
+                        for column2 in range(len(board[row2])):
+                            if is_peg(board[row2][column2]):
+                                average_distance += ((row1 - row2) ** 2 + (column1 - column2) ** 2) ** 0.5
+
+        return average_distance / node.state.get_num_pegs() #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
+
+
+
+def greedy_search(problem, h = None):
+    """f(n) = h(n)"""
+    h = memoize(h or problem.h, 'h')
+    return best_first_graph_search(problem, h)
+
+
+
+#b1 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
+#sol2 = best_first_graph_search(solitaire(b1), solitaire(b1).h)
 
 
 #b1 = [["O","O","O","X","X","X"],
@@ -302,15 +323,19 @@ sol2 = best_first_graph_search(solitaire(b1),solitaire(b1).h)
 
 # recursive_best_first_search
 # astar_search
-#sol2 = astar_search(solitaire(b1), solitaire(b1).h)
+#sol2 = astar_search(solitaire(b1))
 
-if sol2 != None:
-    sol2 = sol2.solution()
-    for move in sol2:
-        b1 = board_perform_move(b1, move)
-    print(str(b1) + "\n\n")
-else:
-    print("No solution")
+#sol2 = greedy_search(solitaire(b1))
+
+#if sol2 != None:
+#    sol2 = sol2.solution()
+#    for move in sol2:
+#        b1 = board_perform_move(b1, move)
+#        print(move)
+#    printBoard(b1)
+#    print("\n\n")
+#else:
+#    print("No solution")
 
 #sol2 = recursive_best_first_search(solitaire(b1)).solution()
 # sol1 = depth_limited_search(solitaire(b1)).solution()
