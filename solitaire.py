@@ -2,6 +2,7 @@ from search import *
 from utils import *
 from copy import deepcopy
 import time
+
 start_time = time.time()
 
 
@@ -92,76 +93,11 @@ def board_perform_move(board, move):
     return new_board
 
 
-def is_corner(row, column, board):
-    if row == 0 or is_blocked(board[row - 1][column]) or row == len(board) - 1 or is_blocked(board[row + 1][column]):
-        if column == 0 or is_blocked(board[row][column - 1]) or column == len(board[0]) - 1 or is_blocked(board[row][column + 1]):
-            return True
-
-    return False
-
-
-def is_isolated(row, column, board):
-
-    if (row >= 0 and column == 0) or (column > 0 and is_empty(board[row][column - 1])):
-        if column == len(board[row]) - 1 or (column < len(board[row]) - 1 and is_empty(board[row][column + 1])):
-            if row == len(board) - 1 or (row < len(board) - 1 and is_empty(board[row + 1][column])):
-                if row == 0 or (row > 0 and is_empty(board[row - 1][column])):
-                    return not is_corner(row, column, board)
-
-    return False
-
-
-def calc_new_isolated(num_isolated, old_board, new_board, move_beg, move_end):
-
-    isolated_diff = 0
-    middle_row = (pos_l(move_beg) + pos_l(move_end)) // 2
-    middle_column = (pos_c(move_beg) + pos_c(move_end)) // 2
-
-    move_direction_row = pos_l(move_beg) - middle_row
-    move_direction_column = middle_column - pos_c(move_beg)
-
-    # positions to check
-    #     5  3  2
-    #  7  P  P  me 0
-    #     6  4  1
-    pos0 = make_pos(pos_l(move_end) + move_direction_row, pos_c(move_end) + move_direction_column)
-    pos1 = make_pos(pos_l(move_end) - move_direction_column, pos_c(move_end) - move_direction_row)
-    pos2 = make_pos(pos_l(move_end) + move_direction_column, pos_c(move_end) + move_direction_row)
-    pos3 = make_pos(middle_row - move_direction_column, middle_column - move_direction_row)
-    pos4 = make_pos(middle_row + move_direction_column, middle_column + move_direction_row)
-    pos5 = make_pos(pos_l(move_beg) - move_direction_column, pos_c(move_beg) - move_direction_row)
-    pos6 = make_pos(pos_l(move_beg) + move_direction_column, pos_c(move_beg) + move_direction_row)
-    pos7 = make_pos(pos_l(move_beg) - move_direction_row, pos_c(move_beg) - move_direction_column)
-
-    pos_list = (pos0, pos1, pos2, pos3, pos4, pos5, pos6, pos7, move_end)
-
-    # old board - 3 checks
-    for position in pos_list[:3]:
-        if pos_l(position) > 0 and pos_c(position) > 0 and pos_l(position) < len(old_board) and pos_c(position) < len(old_board[0]):
-            isolated_diff -= is_peg(old_board[pos_l(position)][pos_c(position)]) and is_isolated(pos_l(position), pos_c(position), old_board) and not is_corner(pos_l(position), pos_c(position), old_board)
-
-    # new board - 5 checks
-    for position in pos_list[3:]:
-        if pos_l(position) > 0 and pos_c(position) > 0 and pos_l(position) < len(new_board) and pos_c(position) < len(new_board[0]):
-            isolated_diff += is_peg(new_board[pos_l(position)][pos_c(position)]) and is_isolated(pos_l(position), pos_c(position), new_board) and not is_corner(pos_l(position), pos_c(position), new_board)
-
-    #print('Action: ', move_beg, move_end)
-    #print('Num isolated: ', num_isolated)
-    #print('Isolated diff: ', isolated_diff)
-    #print_board(old_board)
-    #print_board(new_board)
-    #if num_isolated + isolated_diff < 0:
-    #    sys.exit('oh nono')
-    return num_isolated + isolated_diff
-
-
 def calc_new_average_distance(sum_distance, board, move_beg, move_end):
 
     move_middle = make_pos((pos_l(move_beg) + pos_l(move_end)) // 2, (pos_c(move_beg) + pos_c(move_end)) // 2)
 
-    list_new_calc = (move_beg, move_middle, move_end)
-
-    for pos in list_new_calc:
+    for pos in (move_beg, move_middle, move_end):
         for row in range(len(board)):
             for column in range(len(board[row])):
                 if is_peg(board[row][column]):
@@ -173,15 +109,6 @@ def calc_new_average_distance(sum_distance, board, move_beg, move_end):
                         sum_distance -= abs(pos_l(pos) - row) + abs(pos_c(pos) - column)
 
     return sum_distance
-
-
-def print_board(board):
-
-    for row in board:
-        for content in row:
-            print(content, end=' ')
-        print('')
-    print('')
 
 
 def calc_sum_distance_from(board, row, column):
@@ -198,39 +125,42 @@ def calc_sum_distance_from(board, row, column):
     return sum_distance
 
 
+def print_board(board):
+
+    for row in board:
+        for content in row:
+            print(content, end=' ')
+        print('')
+
+
+def is_corner(row, column, board):
+    if row == 0 or is_blocked(board[row - 1][column]) or row == len(board) - 1 or is_blocked(board[row + 1][column]):
+        if column == 0 or is_blocked(board[row][column - 1]) or column == len(board[0]) - 1 or is_blocked(board[row][column + 1]):
+            return True
+
+    return False
+
+
 class sol_state:
-    def __init__(self, board, num_pegs = 0, num_corners = 0, num_same_parity = 0, num_isolated = 0, average_distance = 0):
-        __slot__ = 'board', 'num_pegs', 'num_corners', 'num_isolated', 'num_same_parity', 'average_distance'
+    __slots__ = ('board', 'num_pegs', 'average_distance', 'num_corners')
+    def __init__(self, board, num_pegs = 0, average_distance = 0, num_corners = 0):
         self.board = board
         self.num_pegs = num_pegs
-        self.num_corners = num_corners
-        self.num_isolated = num_isolated
-        self.num_same_parity = num_same_parity
         self.average_distance = average_distance
+        self.num_corners = num_corners
 
-        if num_pegs == 0:
+        if self.num_pegs == 0:
             for row in range(len(board)):
-                for column in range(len(board[row])):
-
+                for column in range(len(board[0])):
                     if is_peg(board[row][column]):
                         self.num_pegs += 1
-
                         if is_corner(row, column, board):
                             self.num_corners += 1
 
-                        if is_isolated(row, column, board):
-                            self.num_isolated += 1
-
-                        if column % 2 == row % 2:
-                            self.num_same_parity += 1
-
                         self.average_distance += calc_sum_distance_from(board, row, column)
+            self.average_distance /= ((self.num_pegs ** 2 - self.num_pegs) // 2)
 
-            #print('Formula: ', ((self.num_pegs ** 2 - self.num_pegs) // 2))
-            #self.average_distance = self.average_distance / ((self.num_pegs ** 2 - self.num_pegs) // 2)
-            #print(counter)
-            #print(math.factorial(self.num_pegs))
-            #print("INITIAL Num Pegs: " + str(self.num_pegs) + " Num corners: " + str(self.num_corners) + " Num same parity: " + str(self.num_same_parity)+ " Num isolated: " + str(self.num_isolated))
+
 
     def __lt__(self, state):
         return self.num_pegs > state.get_num_pegs()
@@ -241,59 +171,32 @@ class sol_state:
     def get_num_pegs(self):
         return self.num_pegs
 
-    def get_num_corners(self):
-        return self.num_corners
-
-    def get_num_isolated(self):
-        return self.num_isolated
-
-    def get_num_same_parity(self):
-        return self.num_same_parity
-
-    def get_class_difference(self):
-        return self.num_same_parity - (self.num_pegs - self.num_same_parity)
-
     def get_average_distance(self):
         return self.average_distance
+
+    def get_num_corners(self):
+        return self.num_corners
 
 class solitaire(Problem):
     """   Models a Solitaire problem as a satisfaction problem.
     A solution cannot have more than 1 peg left on the board.   """
-
+    __slots__ = 'board'
     def __init__(self, board):
         super().__init__(sol_state(board))
-        __slot__ = 'board'
         self.board = board
+        self.i = 0
 
     def actions(self, state):
-        board = state.get_board()
-
-        if abs(state.get_class_difference()) == state.get_num_pegs():
-            #print("Crisis averted " + str(state.get_class_difference()) + " " + str(state.get_num_pegs()))
-            return []
-        moves = board_moves(board)
-        #print('Number of moves PEEEEEeeeeeeeeeeeeeeeeeeEEEEEEEEEEEEEEEPS: ' + str(len(moves)))
-        return moves
+        return board_moves(state.get_board())
 
     def result(self, state, action):
+        print(self.i)
+        self.i += 1
         board = state.get_board()
-        new_board = board_perform_move(board, action)
-
-        start = move_initial(action)
-        end = move_final(action)
-
-        new_num_corners = state.get_num_corners() - is_corner(pos_l(start), pos_c(start), board) + is_corner(pos_l(end), pos_c(end), board)
-        new_num_same_parity = state.get_num_same_parity() - (pos_l(start) % 2 != pos_c(start) % 2)
-        new_num_isolated = calc_new_isolated(state.get_num_isolated(), board, new_board, start, end)
-
-        new_average_distance = calc_new_average_distance(state.get_average_distance(), board, start, end)# * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), board, start, end) / ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2)
-        new_num_pegs = state.get_num_pegs() - 1
-        #print(new_average_distance)
-        #print("Num Pegs: " + str(new_num_pegs) + " Num corners: " + str(new_num_corners) + " Num same parity: " + str(new_num_same_parity) + " Num isolated: " + str(new_num_isolated) + " Action: " + str(action))
-        #print_board((board))
-        #if new_average_distance < 0:
-        #    sys.exit('oh nono')
-        return sol_state(new_board, new_num_pegs, new_num_corners, new_num_same_parity, new_num_isolated, new_average_distance)
+        new_num_corners = state.get_num_corners() - is_corner(pos_l(move_initial(action)), pos_c(move_initial(action)), board) + is_corner(pos_l(move_final(action)), pos_c(move_final(action)), board)
+        new_average_distance = calc_new_average_distance(state.get_average_distance() * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), state.get_board(), move_initial(action), move_final(action)) / ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2)
+        print(new_average_distance)
+        return sol_state(board_perform_move(board, action), state.get_num_pegs() - 1, new_average_distance, new_num_corners)
 
     def goal_test(self, state):
         return state.get_num_pegs() == 1
@@ -303,24 +206,7 @@ class solitaire(Problem):
 
     def h(self, node):
         """Needed for informed search."""
-
-        #board = node.state.get_board()
-
-        #average_distance = 0
-        #counter = 0
-
-        #for row1 in range(len(board)):
-        #    for column1 in range(len(board[row1])):
-        #        if is_peg(board[row1][column1]):
-        #            for row2 in range(len(board)):
-        #                for column2 in range(len(board[row2])):
-        #                    if is_peg(board[row2][column2]): #and row1 != row2 and column1 != column2:
-        #                        average_distance += ((row1 - row2) ** 2 + (column1 - column2) ** 2) ** 0.5
-        #                        counter += 1
-        #print(counter)
-        #print(average_distance / counter)
-        return node.state.get_average_distance() #+ node.state.get_num_corners() + abs(node.state.get_class_difference()) #node.state.get_average_distance() #  #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
-
+        return node.state.get_average_distance() + node.state.get_num_corners() #+ abs(node.state.get_class_difference()) #node.state.get_average_distance() #  #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
 
 
 #def greedy_search(problem, h = None):
@@ -329,16 +215,9 @@ class solitaire(Problem):
 #    return best_first_graph_search(problem, h)
 
 
-b1 = [["X", "X", "O", "O", "O", "X", "X"],
-      ["X", "O", "O", "O", "O", "O", "x"],
-      ["O", "O", "O", "O", "O", "O", "O"],
-      ["O", "O", "O", "_", "O", "O", "O"],
-      ["O", "O", "O", "O", "O", "O", "O"],
-      ["X", "O", "O", "O", "O", "O", "X"],
-      ["X", "X", "O", "O", "O", "X", "X"]]
 #b1 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
+b1 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O']]
 #sol2 = best_first_graph_search(solitaire(b1), solitaire(b1).h)
-
 
 #b1 = [["O","O","O","X","X","X"],
 #["O","_","O","O","O","O"],
@@ -428,4 +307,7 @@ else:
 
 # compare_searchers([solitaire(b1)], 'idk')
 
-print("--- %s seconds ---" % (time.time() - start_time))
+snapshot = tracemalloc.take_snapshot()
+display_top(snapshot)
+
+print("--- %s seconds ---" % (time.time() - start_time))                       
