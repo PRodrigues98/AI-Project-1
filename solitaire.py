@@ -1,6 +1,8 @@
 from search import *
 from utils import *
 from copy import deepcopy
+import time
+start_time = time.time()
 
 
 # TAI content
@@ -165,10 +167,10 @@ def calc_new_average_distance(sum_distance, board, move_beg, move_end):
                 if is_peg(board[row][column]):
                     if pos_l(pos) == pos_l(move_end) and pos_c(pos) == pos_c(move_end):
                         #average_distance += ((pos_l(pos) - row2) ** 2 + (pos_c(pos) - column2) ** 2) ** 0.5
-                        sum_distance += abs(pos_l(pos) - row) // 2 + abs(pos_c(pos) - column) // 2
+                        sum_distance += abs(pos_l(pos) - row) + abs(pos_c(pos) - column)
                     else:
                         #average_distance -= ((pos_l(pos) - row2) ** 2 + (pos_c(pos) - column2) ** 2) ** 0.5
-                        sum_distance -= abs(pos_l(pos) - row) // 2 + abs(pos_c(pos) - column) // 2
+                        sum_distance -= abs(pos_l(pos) - row) + abs(pos_c(pos) - column)
 
     return sum_distance
 
@@ -184,17 +186,15 @@ def print_board(board):
 
 def calc_sum_distance_from(board, row, column):
 
-    start_column = column
+    start_column = column + 1
     sum_distance = 0
-
     for row2 in range(row, len(board)):
         for column2 in range(start_column, len(board[row2])):
             if is_peg(board[row2][column2]):
                 #average_distance += ((row - row2) ** 2 + (column - column2) ** 2) ** 0.5
-                sum_distance += abs(row - row2) // 2 + abs(column - column2) // 2 # Lower bound of moves necessary to bring these two pegs together
+                sum_distance += abs(row - row2) + abs(column - column2) # Lower bound of moves necessary to bring these two pegs together
 
         start_column = 0
-
     return sum_distance
 
 
@@ -209,8 +209,6 @@ class sol_state:
         self.average_distance = average_distance
 
         if num_pegs == 0:
-            counter = 0
-            average_distance = 0
             for row in range(len(board)):
                 for column in range(len(board[row])):
 
@@ -228,8 +226,8 @@ class sol_state:
 
                         self.average_distance += calc_sum_distance_from(board, row, column)
 
-            self.average_distance = self.average_distance / ((self.num_pegs ** 2 - self.num_pegs) // 2)
-            #print(average_distance / math.factorial(self.num_pegs))
+            #print('Formula: ', ((self.num_pegs ** 2 - self.num_pegs) // 2))
+            #self.average_distance = self.average_distance / ((self.num_pegs ** 2 - self.num_pegs) // 2)
             #print(counter)
             #print(math.factorial(self.num_pegs))
             #print("INITIAL Num Pegs: " + str(self.num_pegs) + " Num corners: " + str(self.num_corners) + " Num same parity: " + str(self.num_same_parity)+ " Num isolated: " + str(self.num_isolated))
@@ -288,11 +286,13 @@ class solitaire(Problem):
         new_num_same_parity = state.get_num_same_parity() - (pos_l(start) % 2 != pos_c(start) % 2)
         new_num_isolated = calc_new_isolated(state.get_num_isolated(), board, new_board, start, end)
 
-        new_average_distance = calc_new_average_distance(state.get_average_distance() * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), board, start, end) / ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2)
+        new_average_distance = calc_new_average_distance(state.get_average_distance(), board, start, end)# * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), board, start, end) / ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2)
         new_num_pegs = state.get_num_pegs() - 1
         #print(new_average_distance)
         #print("Num Pegs: " + str(new_num_pegs) + " Num corners: " + str(new_num_corners) + " Num same parity: " + str(new_num_same_parity) + " Num isolated: " + str(new_num_isolated) + " Action: " + str(action))
         #print_board((board))
+        #if new_average_distance < 0:
+        #    sys.exit('oh nono')
         return sol_state(new_board, new_num_pegs, new_num_corners, new_num_same_parity, new_num_isolated, new_average_distance)
 
     def goal_test(self, state):
@@ -319,8 +319,7 @@ class solitaire(Problem):
         #                        counter += 1
         #print(counter)
         #print(average_distance / counter)
-        
-        return node.state.get_average_distance() + node.state.get_num_corners() #node.state.get_average_distance() #  #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
+        return node.state.get_average_distance() #+ node.state.get_num_corners() + abs(node.state.get_class_difference()) #node.state.get_average_distance() #  #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
 
 
 
@@ -330,7 +329,13 @@ class solitaire(Problem):
 #    return best_first_graph_search(problem, h)
 
 
-
+b1 = [["X", "X", "O", "O", "O", "X", "X"],
+      ["X", "O", "O", "O", "O", "O", "x"],
+      ["O", "O", "O", "O", "O", "O", "O"],
+      ["O", "O", "O", "_", "O", "O", "O"],
+      ["O", "O", "O", "O", "O", "O", "O"],
+      ["X", "O", "O", "O", "O", "O", "X"],
+      ["X", "X", "O", "O", "O", "X", "X"]]
 #b1 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
 #sol2 = best_first_graph_search(solitaire(b1), solitaire(b1).h)
 
@@ -375,17 +380,16 @@ class solitaire(Problem):
 # recursive_best_first_search
 # astar_search
 # greedy_search
-#sol2 = astar_search(solitaire(b1))
+sol2 = astar_search(solitaire(b1))
 
-#if sol2 != None:
-#    sol2 = sol2.solution()
-#    for move in sol2:
-#        b1 = board_perform_move(b1, move)
-#        print(move)
-#    print_board(b1)
-#    print("\n\n")
-#else:
-#    print("No solution")
+if sol2 != None:
+    sol2 = sol2.solution()
+    for move in sol2:
+        b1 = board_perform_move(b1, move)
+    print_board(b1)
+    print("\n\n")
+else:
+    print("No solution")
 
 #sol2 = recursive_best_first_search(solitaire(b1)).solution()
 # sol1 = depth_limited_search(solitaire(b1)).solution()
@@ -423,3 +427,5 @@ class solitaire(Problem):
 
 
 # compare_searchers([solitaire(b1)], 'idk')
+
+print("--- %s seconds ---" % (time.time() - start_time))

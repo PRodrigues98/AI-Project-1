@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/solitaire.py" line="249" mnemonic="3" />
-    <bookmark url="file://$PROJECT_DIR$/solitaire.py" line="124" />
+    <bookmark url="file://$PROJECT_DIR$/solitaire.py" line="247" mnemonic="3" />
+    <bookmark url="file://$PROJECT_DIR$/solitaire.py" line="126" />
     <bookmark url="file://$PROJECT_DIR$/solitaire.py" line="310" />
-    <bookmark url="file://$PROJECT_DIR$/solitaire.py" line="129" mnemonic="8" />
+    <bookmark url="file://$PROJECT_DIR$/solitaire.py" line="131" mnemonic="8" />
+    <bookmark url="file://$PROJECT_DIR$/solitaire.py" line="331" />
   </component>
   <component name="ChangeListManager">
     <list default="true" id="031c24d8-cd18-4fed-af29-b1ff2a10eb50" name="Default" comment="">
@@ -57,9 +58,10 @@
       <file leaf-file-name="solitaire.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/solitaire.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1352">
-              <caret line="365" column="1" selection-start-line="365" selection-start-column="1" selection-end-line="365" selection-end-column="1" />
+            <state relative-caret-position="216">
+              <caret line="190" selection-start-line="190" selection-end-line="190" />
               <folding>
+                <element signature="e#0#20#0" expanded="true" />
                 <element signature="e#686#1811#0" />
                 <element signature="e#1855#2199#0" />
                 <element signature="e#2241#2527#0" />
@@ -72,7 +74,7 @@
       <file leaf-file-name="search.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/search.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="536">
+            <state relative-caret-position="1683">
               <caret line="109" selection-start-line="109" selection-end-line="109" />
             </state>
           </provider>
@@ -101,6 +103,7 @@
       <find>print(&quot;INITIAL Num Pegs: &quot; + str(self.num_pegs) + &quot; Num corners: &quot; + str(self.num_corners) + &quot; Num same parity: &quot; + str(self.num_same_parity)+ &quot; Num isolated: &quot; + str(self.num_isolated))</find>
       <find>printBo</find>
       <find>print</find>
+      <find>psutil</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -115,8 +118,8 @@
     </option>
   </component>
   <component name="ProjectFrameBounds" extendedState="6">
-    <option name="x" value="623" />
-    <option name="y" value="47" />
+    <option name="x" value="782" />
+    <option name="y" value="34" />
     <option name="width" value="974" />
     <option name="height" value="1047" />
   </component>
@@ -205,9 +208,9 @@
       <window_info anchor="bottom" id="Event Log" order="8" side_tool="true" />
       <window_info anchor="bottom" id="Version Control" order="9" />
       <window_info anchor="bottom" id="Python Console" order="10" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.34325185" />
+      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.34325185" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
-      <window_info anchor="bottom" id="Terminal" order="7" />
+      <window_info anchor="bottom" id="Terminal" order="7" weight="0.32943678" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Debug" order="3" weight="0.3995749" />
       <window_info anchor="right" content_ui="combo" id="Hierarchy" order="2" weight="0.25" />
@@ -224,10 +227,16 @@
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/solitaire.py</url>
+          <option name="timeStamp" value="6" />
+        </line-breakpoint>
+      </breakpoints>
       <breakpoints-dialog>
         <breakpoints-dialog />
       </breakpoints-dialog>
-      <option name="time" value="6" />
+      <option name="time" value="7" />
     </breakpoint-manager>
     <watches-manager>
       <configuration name="PythonConfigurationType">
@@ -250,9 +259,31 @@
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/solitaire.py">
       <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="6205">
+          <caret line="365" column="1" selection-start-line="365" selection-start-column="1" selection-end-line="365" selection-end-column="1" />
+          <folding>
+            <element signature="e#0#20#0" expanded="true" />
+            <element signature="e#686#1811#0" />
+            <element signature="e#1855#2199#0" />
+            <element signature="e#2241#2527#0" />
+            <element signature="e#2572#3027#0" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/search.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="1853">
+          <caret line="109" selection-start-line="109" selection-end-line="109" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/solitaire.py">
+      <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="4488">
           <caret line="266" column="48" lean-forward="true" selection-start-line="266" selection-start-column="48" selection-end-line="266" selection-end-column="48" />
           <folding>
+            <element signature="e#0#20#0" expanded="true" />
             <element signature="e#686#1811#0" />
             <element signature="e#1855#2199#0" />
             <element signature="e#2241#2527#0" />
@@ -410,16 +441,17 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/search.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="536">
+        <state relative-caret-position="1683">
           <caret line="109" selection-start-line="109" selection-end-line="109" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/solitaire.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1352">
-          <caret line="365" column="1" selection-start-line="365" selection-start-column="1" selection-end-line="365" selection-end-column="1" />
+        <state relative-caret-position="216">
+          <caret line="190" selection-start-line="190" selection-end-line="190" />
           <folding>
+            <element signature="e#0#20#0" expanded="true" />
             <element signature="e#686#1811#0" />
             <element signature="e#1855#2199#0" />
             <element signature="e#2241#2527#0" />
