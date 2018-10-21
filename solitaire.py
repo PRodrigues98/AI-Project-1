@@ -153,22 +153,24 @@ def calc_new_isolated(num_isolated, old_board, new_board, move_beg, move_end):
     return num_isolated + isolated_diff
 
 
-def calc_new_average_distance(average_distance, board, move_beg, move_end):
+def calc_new_average_distance(sum_distance, board, move_beg, move_end):
 
     move_middle = make_pos((pos_l(move_beg) + pos_l(move_end)) // 2, (pos_c(move_beg) + pos_c(move_end)) // 2)
 
     list_new_calc = (move_beg, move_middle, move_end)
 
     for pos in list_new_calc:
-        for row2 in range(len(board)):
-            for column2 in range(len(board[row2])):
-                if is_peg(board[row2][column2]):
+        for row in range(len(board)):
+            for column in range(len(board[row])):
+                if is_peg(board[row][column]):
                     if pos_l(pos) == pos_l(move_end) and pos_c(pos) == pos_c(move_end):
-                        average_distance += ((pos_l(pos) - row2) ** 2 + (pos_c(pos) - column2) ** 2) ** 0.5
+                        #average_distance += ((pos_l(pos) - row2) ** 2 + (pos_c(pos) - column2) ** 2) ** 0.5
+                        sum_distance += abs(pos_l(pos) - row) // 2 + abs(pos_c(pos) - column) // 2
                     else:
-                        average_distance -= ((pos_l(pos) - row2) ** 2 + (pos_c(pos) - column2) ** 2) ** 0.5
+                        #average_distance -= ((pos_l(pos) - row2) ** 2 + (pos_c(pos) - column2) ** 2) ** 0.5
+                        sum_distance -= abs(pos_l(pos) - row) // 2 + abs(pos_c(pos) - column) // 2
 
-    return average_distance
+    return sum_distance
 
 
 def print_board(board):
@@ -178,6 +180,22 @@ def print_board(board):
             print(content, end=' ')
         print('')
     print('')
+
+
+def calc_sum_distance_from(board, row, column):
+
+    start_column = column
+    sum_distance = 0
+
+    for row2 in range(row, len(board)):
+        for column2 in range(start_column, len(board[row2])):
+            if is_peg(board[row2][column2]):
+                #average_distance += ((row - row2) ** 2 + (column - column2) ** 2) ** 0.5
+                sum_distance += abs(row - row2) // 2 + abs(column - column2) // 2 # Lower bound of moves necessary to bring these two pegs together
+
+        start_column = 0
+
+    return sum_distance
 
 
 class sol_state:
@@ -195,20 +213,22 @@ class sol_state:
             average_distance = 0
             for row in range(len(board)):
                 for column in range(len(board[row])):
+
                     if is_peg(board[row][column]):
                         self.num_pegs += 1
+
                         if is_corner(row, column, board):
                             self.num_corners += 1
+
                         if is_isolated(row, column, board):
                             self.num_isolated += 1
+
                         if column % 2 == row % 2:
                             self.num_same_parity += 1
-                        for row2 in range(len(board)):
-                            for column2 in range(len(board[row2])):
-                                if is_peg(board[row2][column2]) and row != row2 and column != column2:
-                                    average_distance += ((row - row2) ** 2 + (column - column2) ** 2) ** 0.5
-                                    counter += 1
-            self.average_distance = average_distance / self.num_pegs ** 2
+
+                        self.average_distance += calc_sum_distance_from(board, row, column)
+
+            self.average_distance = self.average_distance / ((self.num_pegs ** 2 - self.num_pegs) // 2)
             #print(average_distance / math.factorial(self.num_pegs))
             #print(counter)
             #print(math.factorial(self.num_pegs))
@@ -235,7 +255,7 @@ class sol_state:
     def get_class_difference(self):
         return self.num_same_parity - (self.num_pegs - self.num_same_parity)
 
-    def get_num_average_distance(self):
+    def get_average_distance(self):
         return self.average_distance
 
 class solitaire(Problem):
@@ -268,7 +288,7 @@ class solitaire(Problem):
         new_num_same_parity = state.get_num_same_parity() - (pos_l(start) % 2 != pos_c(start) % 2)
         new_num_isolated = calc_new_isolated(state.get_num_isolated(), board, new_board, start, end)
 
-        new_average_distance = calc_new_average_distance(state.get_num_average_distance() * (state.get_num_pegs() ** 2), board, start, end) / ((state.get_num_pegs() - 1) ** 2)
+        new_average_distance = calc_new_average_distance(state.get_average_distance() * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), board, start, end) / ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2)
         new_num_pegs = state.get_num_pegs() - 1
         #print(new_average_distance)
         #print("Num Pegs: " + str(new_num_pegs) + " Num corners: " + str(new_num_corners) + " Num same parity: " + str(new_num_same_parity) + " Num isolated: " + str(new_num_isolated) + " Action: " + str(action))
@@ -299,14 +319,15 @@ class solitaire(Problem):
         #                        counter += 1
         #print(counter)
         #print(average_distance / counter)
-        return node.state.get_num_average_distance() / (node.state.get_num_pegs() ** 2) # average_distance / counter #  #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
+        
+        return node.state.get_average_distance() + node.state.get_num_corners() #node.state.get_average_distance() #  #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
 
 
 
-def greedy_search(problem, h = None):
-    """f(n) = h(n)"""
-    h = memoize(h or problem.h, 'h')
-    return best_first_graph_search(problem, h)
+#def greedy_search(problem, h = None):
+#    """f(n) = h(n)"""
+#    h = memoize(h or problem.h, 'h')
+#    return best_first_graph_search(problem, h)
 
 
 
@@ -353,6 +374,7 @@ def greedy_search(problem, h = None):
 
 # recursive_best_first_search
 # astar_search
+# greedy_search
 #sol2 = astar_search(solitaire(b1))
 
 #if sol2 != None:
