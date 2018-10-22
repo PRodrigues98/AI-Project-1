@@ -8,6 +8,44 @@ import time
 start_time = time.time()
 
 
+
+import linecache
+import os
+import tracemalloc
+
+def display_top(snapshot, key_type='lineno', limit=3):
+    snapshot = snapshot.filter_traces((
+        tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
+        tracemalloc.Filter(False, "<unknown>"),
+    ))
+    top_stats = snapshot.statistics(key_type)
+
+    print("Top %s lines" % limit)
+    for index, stat in enumerate(top_stats[:limit], 1):
+        frame = stat.traceback[0]
+        # replace "/path/to/module/file.py" with "module/file.py"
+        filename = os.sep.join(frame.filename.split(os.sep)[-2:])
+        print("#%s: %s:%s: %.1f KiB"
+              % (index, filename, frame.lineno, stat.size / 1024))
+        line = linecache.getline(frame.filename, frame.lineno).strip()
+        if line:
+            print('    %s' % line)
+
+    other = top_stats[limit:]
+    if other:
+        size = sum(stat.size for stat in other)
+        print("%s other: %.1f KiB" % (len(other), size / 1024))
+    total = sum(stat.size for stat in top_stats)
+    print("Total allocated size: %.1f KiB" % (total / 1024))
+
+
+tracemalloc.start()
+
+
+
+
+
+
 # TAI content
 def c_peg ():
     return "O"
@@ -205,7 +243,10 @@ class solitaire(Problem):
 
     def h(self, node):
         """Needed for informed search."""
-        return abs(node.state.get_average_distance()) + 30*node.state.get_num_corners() #+ abs(node.state.get_class_difference()) #node.state.get_average_distance() #  #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
+
+        #+ abs(node.state.get_class_difference()) #node.state.get_average_distance() len(self.board) * len(self.board[0])
+
+        return ((17 * node.state.get_average_distance() + 31 * node.state.get_num_corners()) / (17 + 31)) * (node.state.get_num_pegs() - 1)
 
 
 #def greedy_search(problem, h = None):
@@ -215,7 +256,7 @@ class solitaire(Problem):
 
 
 #b1 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
-#b1 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O']]
+b1 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O']]
 #sol2 = best_first_graph_search(solitaire(b1), solitaire(b1).h)
 
 #b1 = [["O","O","O","X","X","X"],
@@ -258,16 +299,21 @@ class solitaire(Problem):
 # recursive_best_first_search
 # astar_search
 # greedy_search
-#sol2 = astar_search(solitaire(b1))
+sol2 = astar_search(solitaire(b1))
 
-#if sol2 != None:
-#    sol2 = sol2.solution()
-#    for move in sol2:
-#        b1 = board_perform_move(b1, move)
-#    print_board(b1)
-#    print("\n\n")
-#else:
-#    print("No solution")
+if sol2 != None:
+    sol2 = sol2.solution()
+    for move in sol2:
+        b1 = board_perform_move(b1, move)
+        #print_board(b1)
+    print("\n\n")
+else:
+    print("No solution")
+
+
+snapshot = tracemalloc.take_snapshot()
+display_top(snapshot)
+
 
 #sol2 = recursive_best_first_search(solitaire(b1)).solution()
 # sol1 = depth_limited_search(solitaire(b1)).solution()
@@ -309,4 +355,4 @@ class solitaire(Problem):
 #snapshot = tracemalloc.take_snapshot()
 #display_top(snapshot)
 
-#print("--- %s seconds ---" % (time.time() - start_time))
+print("--- %s seconds ---" % (time.time() - start_time))
