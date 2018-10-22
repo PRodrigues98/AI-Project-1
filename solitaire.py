@@ -39,7 +39,7 @@ def display_top(snapshot, key_type='lineno', limit=3):
     print("Total allocated size: %.1f KiB" % (total / 1024))
 
 
-tracemalloc.start()
+#tracemalloc.start()
 
 
 
@@ -231,8 +231,14 @@ class solitaire(Problem):
 
     def result(self, state, action):
         board = state.get_board()
+
         new_num_corners = state.get_num_corners() - is_corner(pos_l(move_initial(action)), pos_c(move_initial(action)), board) + is_corner(pos_l(move_final(action)), pos_c(move_final(action)), board)
-        new_average_distance = calc_new_average_distance(state.get_average_distance() * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), state.get_board(), move_initial(action), move_final(action)) / ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2)
+        
+        if state.get_num_pegs() != 2:
+            new_average_distance = calc_new_average_distance(state.get_average_distance() * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), state.get_board(), move_initial(action), move_final(action)) / (((state.get_num_pegs() - 1) ** 2 - (state.get_num_pegs() - 1)) // 2)
+        else:
+            new_average_distance = 0
+
         return sol_state(board_perform_move(board, action), state.get_num_pegs() - 1, new_average_distance, new_num_corners)
 
     def goal_test(self, state):
@@ -301,18 +307,18 @@ b1 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O',
 # greedy_search
 sol2 = astar_search(solitaire(b1))
 
-if sol2 != None:
-    sol2 = sol2.solution()
-    for move in sol2:
-        b1 = board_perform_move(b1, move)
-        #print_board(b1)
-    print("\n\n")
-else:
-    print("No solution")
+#if sol2 != None:
+#    sol2 = sol2.solution()
+#    for move in sol2:
+#        b1 = board_perform_move(b1, move)
+#        #print_board(b1)
+#    print("\n\n")
+#else:
+#    print("No solution")
 
 
-snapshot = tracemalloc.take_snapshot()
-display_top(snapshot)
+#snapshot = tracemalloc.take_snapshot()
+#display_top(snapshot)
 
 
 #sol2 = recursive_best_first_search(solitaire(b1)).solution()
