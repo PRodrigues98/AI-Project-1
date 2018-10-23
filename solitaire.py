@@ -5,46 +5,7 @@ import time
 
 
 
-start_time = time.time()
-
-
-
-import linecache
-import os
-import tracemalloc
-
-def display_top(snapshot, key_type='lineno', limit=3):
-    snapshot = snapshot.filter_traces((
-        tracemalloc.Filter(False, "<frozen importlib._bootstrap>"),
-        tracemalloc.Filter(False, "<unknown>"),
-    ))
-    top_stats = snapshot.statistics(key_type)
-
-    print("Top %s lines" % limit)
-    for index, stat in enumerate(top_stats[:limit], 1):
-        frame = stat.traceback[0]
-        # replace "/path/to/module/file.py" with "module/file.py"
-        filename = os.sep.join(frame.filename.split(os.sep)[-2:])
-        print("#%s: %s:%s: %.1f KiB"
-              % (index, filename, frame.lineno, stat.size / 1024))
-        line = linecache.getline(frame.filename, frame.lineno).strip()
-        if line:
-            print('    %s' % line)
-
-    other = top_stats[limit:]
-    if other:
-        size = sum(stat.size for stat in other)
-        print("%s other: %.1f KiB" % (len(other), size / 1024))
-    total = sum(stat.size for stat in top_stats)
-    print("Total allocated size: %.1f KiB" % (total / 1024))
-
-
-#tracemalloc.start()
-
-
-
-
-
+#start_time = time.time()
 
 # TAI content
 def c_peg ():
@@ -182,16 +143,69 @@ def is_corner(row, column, board):
 
     return False
 
+def is_isolated(row, column, board):
+
+    if (row >= 0 and column == 0) or (column > 0 and is_empty(board[row][column - 1])):
+        if column == len(board[row]) - 1 or (column < len(board[row]) - 1 and is_empty(board[row][column + 1])):
+            if row == len(board) - 1 or (row < len(board) - 1 and is_empty(board[row + 1][column])):
+                if row == 0 or (row > 0 and is_empty(board[row - 1][column])):
+                    return not is_corner(row, column, board)
+
+    return False
+
+def calc_new_isolated(num_isolated, old_board, new_board, move_beg, move_end):
+
+    isolated_diff = 0
+    middle_row = (pos_l(move_beg) + pos_l(move_end)) // 2
+    middle_column = (pos_c(move_beg) + pos_c(move_end)) // 2
+
+    move_direction_row = pos_l(move_beg) - middle_row
+    move_direction_column = middle_column - pos_c(move_beg)
+
+    # positions to check
+    #     5  3  2
+    #  7  P  P  me 0
+    #     6  4  1
+    pos0 = make_pos(pos_l(move_end) + move_direction_row, pos_c(move_end) + move_direction_column)
+    pos1 = make_pos(pos_l(move_end) - move_direction_column, pos_c(move_end) - move_direction_row)
+    pos2 = make_pos(pos_l(move_end) + move_direction_column, pos_c(move_end) + move_direction_row)
+    pos3 = make_pos(middle_row - move_direction_column, middle_column - move_direction_row)
+    pos4 = make_pos(middle_row + move_direction_column, middle_column + move_direction_row)
+    pos5 = make_pos(pos_l(move_beg) - move_direction_column, pos_c(move_beg) - move_direction_row)
+    pos6 = make_pos(pos_l(move_beg) + move_direction_column, pos_c(move_beg) + move_direction_row)
+    pos7 = make_pos(pos_l(move_beg) - move_direction_row, pos_c(move_beg) - move_direction_column)
+
+    pos_list = (pos0, pos1, pos2, pos3, pos4, pos5, pos6, pos7, move_end)
+
+    # old board - 3 checks
+    for position in pos_list[:3]:
+        if pos_l(position) > 0 and pos_c(position) > 0 and pos_l(position) < len(old_board) and pos_c(position) < len(old_board[0]):
+            isolated_diff -= is_peg(old_board[pos_l(position)][pos_c(position)]) and is_isolated(pos_l(position), pos_c(position), old_board) and not is_corner(pos_l(position), pos_c(position), old_board)
+
+    # new board - 5 checks
+    for position in pos_list[3:]:
+        if pos_l(position) > 0 and pos_c(position) > 0 and pos_l(position) < len(new_board) and pos_c(position) < len(new_board[0]):
+            isolated_diff += is_peg(new_board[pos_l(position)][pos_c(position)]) and is_isolated(pos_l(position), pos_c(position), new_board) and not is_corner(pos_l(position), pos_c(position), new_board)
+
+    #print('Action: ', move_beg, move_end)
+    #print('Num isolated: ', num_isolated)
+    #print('Isolated diff: ', isolated_diff)
+    #print_board(old_board)
+    #print_board(new_board)
+    #if num_isolated + isolated_diff < 0:
+    #    sys.exit('oh nono')
+    return num_isolated + isolated_diff
 
 class sol_state():
-    __slots__ = ('board', 'num_pegs', 'average_distance', 'num_corners', 'num_occupied_corners')
+    __slots__ = ('board', 'num_pegs', 'average_distance', 'num_corners', 'num_occupied_corners', 'num_isolated')
 
-    def __init__(self, board, num_pegs = 0, average_distance = 0, num_occupied_corners = 0, num_corners = 0):
+    def __init__(self, board, num_pegs = 0, average_distance = 0, num_occupied_corners = 0, num_corners = 0, num_isolated = 0):
         self.board = board
         self.num_pegs = num_pegs
         self.average_distance = average_distance
         self.num_occupied_corners = num_occupied_corners
         self.num_corners = num_corners
+        self.num_isolated = num_isolated
 
         if self.num_pegs == 0:
             for row in range(len(board)):
@@ -200,6 +214,8 @@ class sol_state():
                         self.num_pegs += 1
                         if is_corner(row, column, board):
                             self.num_occupied_corners += 1
+                        if is_isolated(row, column, board):
+                            self.num_isolated += 1
                         res = calc_sum_distance_from(board, row, column)
                         self.average_distance += res[0]
                     if not is_blocked(board[row][column]) and is_corner(row, column, board):
@@ -207,8 +223,6 @@ class sol_state():
 
             if ((self.num_pegs ** 2 - self.num_pegs) // 2) != 0:
                 self.average_distance /= ((self.num_pegs ** 2 - self.num_pegs) // 2)
-
-
 
     def __lt__(self, state):
         return self.num_pegs > state.get_num_pegs()
@@ -225,6 +239,9 @@ class sol_state():
     def get_num_corners(self):
         return self.num_corners
 
+    def get_num_isolated(self):
+        return self.num_isolated
+
     def get_num_occupied_corners(self):
         return self.num_occupied_corners
 
@@ -232,6 +249,7 @@ class solitaire(Problem):
     """   Models a Solitaire problem as a satisfaction problem.
     A solution cannot have more than 1 peg left on the board.   """
     __slots__ = 'board'
+
     def __init__(self, board):
         super().__init__(sol_state(board))
         self.board = board
@@ -241,6 +259,7 @@ class solitaire(Problem):
 
     def result(self, state, action):
         board = state.get_board()
+        new_board = board_perform_move(board, action)
 
         new_num_occupied_corners = state.get_num_occupied_corners() - is_corner(pos_l(move_initial(action)), pos_c(move_initial(action)), board) + is_corner(pos_l(move_final(action)), pos_c(move_final(action)), board)
         
@@ -248,7 +267,8 @@ class solitaire(Problem):
             new_average_distance = calc_new_average_distance(state.get_average_distance() * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), state.get_board(), move_initial(action), move_final(action)) / (((state.get_num_pegs() - 1) ** 2 - (state.get_num_pegs() - 1)) // 2)
         else:
             new_average_distance = 0
-        return sol_state(board_perform_move(board, action), state.get_num_pegs() - 1, new_average_distance, new_num_occupied_corners, state.get_num_corners())
+        new_num_isolated = calc_new_isolated(state.get_num_isolated(), board, new_board, move_initial(action), move_final(action))
+        return sol_state(new_board, state.get_num_pegs() - 1, new_average_distance, new_num_occupied_corners, state.get_num_corners())
 
     def goal_test(self, state):
         return state.get_num_pegs() == 1
@@ -261,6 +281,7 @@ class solitaire(Problem):
 
         board = node.state.board
         num_pegs_can_move = 0
+        n = 0
         for row in range(len(board)):
             for column in range(len(board[0])):
                 can_move = False
@@ -276,9 +297,14 @@ class solitaire(Problem):
                 if can_move:
                     num_pegs_can_move += 1
 
+        h = node.state.get_num_pegs() - num_pegs_can_move
 
-        print(num_pegs_can_move)
-        return node.state.get_num_pegs() - num_pegs_can_move
+        #print(h)
+
+        if node.state.get_num_pegs() == 1:
+            return 0
+        else:
+            return h
 
         # distance_weight = 1
         # corner_weight = 1
@@ -302,7 +328,7 @@ def greedy_search(problem, h = None):
     h = memoize(h or problem.h, 'h')
     return best_first_graph_search(problem, h)
 
-b1 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
+#b1 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
 #b1 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O']]
 #sol2 = best_first_graph_search(solitaire(b1), solitaire(b1).h)
 
@@ -341,7 +367,7 @@ b1 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O"
 # recursive_best_first_search
 # astar_search
 # greedy_search
-sol2 = astar_search(solitaire(b1))
+#sol2 = astar_search(solitaire(b1))
 
 #if sol2 != None:
 #    sol2 = sol2.solution()
@@ -356,4 +382,4 @@ sol2 = astar_search(solitaire(b1))
 #display_top(snapshot)
 
 
-print("--- %s seconds ---" % (time.time() - start_time))
+#print("--- %s seconds ---" % (time.time() - start_time))
