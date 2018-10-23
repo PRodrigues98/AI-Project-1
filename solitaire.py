@@ -141,28 +141,30 @@ def calc_new_average_distance(sum_distance, board, move_beg, move_end):
         for row in range(len(board)):
             for column in range(len(board[row])):
                 if is_peg(board[row][column]):
-                    if pos_l(pos) == pos_l(move_end) and pos_c(pos) == pos_c(move_end):
-                        #average_distance += ((pos_l(pos) - row2) ** 2 + (pos_c(pos) - column2) ** 2) ** 0.5
-                        sum_distance += abs(pos_l(pos) - row) + abs(pos_c(pos) - column)
+                    if pos == move_end:
+                        if make_pos(row, column) not in (move_beg, move_middle):
+                            sum_distance += abs(pos_l(pos) - row) + abs(pos_c(pos) - column)
                     else:
-                        #average_distance -= ((pos_l(pos) - row2) ** 2 + (pos_c(pos) - column2) ** 2) ** 0.5
                         sum_distance -= abs(pos_l(pos) - row) + abs(pos_c(pos) - column)
-
-    return sum_distance
+    return sum_distance + 1
 
 
 def calc_sum_distance_from(board, row, column):
 
     start_column = column + 1
     sum_distance = 0
+    max_distance = 0
     for row2 in range(row, len(board)):
         for column2 in range(start_column, len(board[row2])):
             if is_peg(board[row2][column2]):
-                #average_distance += ((row - row2) ** 2 + (column - column2) ** 2) ** 0.5
-                sum_distance += abs(row - row2) + abs(column - column2) # Lower bound of moves necessary to bring these two pegs together
+                distance = abs(row - row2) + abs(column - column2)
+                sum_distance += distance # Lower bound of moves necessary to bring these two pegs together
+                if distance > max_distance:
+                    max_distance = distance
 
         start_column = 0
-    return sum_distance
+
+    return sum_distance, max_distance
 
 
 def print_board(board):
@@ -181,12 +183,14 @@ def is_corner(row, column, board):
     return False
 
 
-class sol_state:
-    __slots__ = ('board', 'num_pegs', 'average_distance', 'num_corners')
-    def __init__(self, board, num_pegs = 0, average_distance = 0, num_corners = 0):
+class sol_state():
+    __slots__ = ('board', 'num_pegs', 'average_distance', 'num_corners', 'num_occupied_corners')
+
+    def __init__(self, board, num_pegs = 0, average_distance = 0, num_occupied_corners = 0, num_corners = 0):
         self.board = board
         self.num_pegs = num_pegs
         self.average_distance = average_distance
+        self.num_occupied_corners = num_occupied_corners
         self.num_corners = num_corners
 
         if self.num_pegs == 0:
@@ -195,9 +199,12 @@ class sol_state:
                     if is_peg(board[row][column]):
                         self.num_pegs += 1
                         if is_corner(row, column, board):
-                            self.num_corners += 1
+                            self.num_occupied_corners += 1
+                        res = calc_sum_distance_from(board, row, column)
+                        self.average_distance += res[0]
+                    if not is_blocked(board[row][column]) and is_corner(row, column, board):
+                        self.num_corners += 1
 
-                        self.average_distance += calc_sum_distance_from(board, row, column)
             if ((self.num_pegs ** 2 - self.num_pegs) // 2) != 0:
                 self.average_distance /= ((self.num_pegs ** 2 - self.num_pegs) // 2)
 
@@ -218,6 +225,9 @@ class sol_state:
     def get_num_corners(self):
         return self.num_corners
 
+    def get_num_occupied_corners(self):
+        return self.num_occupied_corners
+
 class solitaire(Problem):
     """   Models a Solitaire problem as a satisfaction problem.
     A solution cannot have more than 1 peg left on the board.   """
@@ -232,14 +242,13 @@ class solitaire(Problem):
     def result(self, state, action):
         board = state.get_board()
 
-        new_num_corners = state.get_num_corners() - is_corner(pos_l(move_initial(action)), pos_c(move_initial(action)), board) + is_corner(pos_l(move_final(action)), pos_c(move_final(action)), board)
+        new_num_occupied_corners = state.get_num_occupied_corners() - is_corner(pos_l(move_initial(action)), pos_c(move_initial(action)), board) + is_corner(pos_l(move_final(action)), pos_c(move_final(action)), board)
         
         if state.get_num_pegs() != 2:
             new_average_distance = calc_new_average_distance(state.get_average_distance() * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), state.get_board(), move_initial(action), move_final(action)) / (((state.get_num_pegs() - 1) ** 2 - (state.get_num_pegs() - 1)) // 2)
         else:
             new_average_distance = 0
-
-        return sol_state(board_perform_move(board, action), state.get_num_pegs() - 1, new_average_distance, new_num_corners)
+        return sol_state(board_perform_move(board, action), state.get_num_pegs() - 1, new_average_distance, new_num_occupied_corners, state.get_num_corners())
 
     def goal_test(self, state):
         return state.get_num_pegs() == 1
@@ -250,25 +259,57 @@ class solitaire(Problem):
     def h(self, node):
         """Needed for informed search."""
 
-        #+ abs(node.state.get_class_difference()) #node.state.get_average_distance() len(self.board) * len(self.board[0])
+        board = node.state.board
+        num_pegs_can_move = 0
+        for row in range(len(board)):
+            for column in range(len(board[0])):
+                can_move = False
+                if is_peg(board[row][column]):
+                    if column > 1 and is_peg(board[row][column - 1]) and is_empty(board[row][column - 2]):
+                        can_move = True
+                    if column < len(board[row]) - 2 and is_peg(board[row][column + 1]) and is_empty(board[row][column + 2]):
+                        can_move = True
+                    if row < len(board) - 2 and is_peg(board[row + 1][column]) and is_empty(board[row + 2][column]):
+                        can_move = True
+                    if row > 1 and is_peg(board[row - 1][column]) and is_empty(board[row - 2][column]):
+                        can_move = True
+                if can_move:
+                    num_pegs_can_move += 1
 
-        return ((17 * node.state.get_average_distance() + 31 * node.state.get_num_corners()) / (17 + 31)) * (node.state.get_num_pegs() - 1)
+
+        print(num_pegs_can_move)
+        return node.state.get_num_pegs() - num_pegs_can_move
+
+        # distance_weight = 1
+        # corner_weight = 1
+        # board = node.state.board
+        # max_distance = 0
+
+        #for row in range(len(board)):
+        #    for column in range(len(board[0])):
+        #        if is_peg(board[row][column]):
+        #            new_distance = calc_sum_distance_from(board, row, column)[1]
+        #            if new_distance > max_distance:
+        #                max_distance = new_distance
+
+        # h_distance = node.state.get_average_distance() / max_distance * distance_weight
+        # h_corner = (node.state.get_num_occupied_corners() * corner_weight / node.state.get_num_corners())
+        # return (node.state.get_num_pegs() - 1) * ((h_distance + h_corner) / (2 + distance_weight + corner_weight))
 
 
-#def greedy_search(problem, h = None):
-#    """f(n) = h(n)"""
-#    h = memoize(h or problem.h, 'h')
-#    return best_first_graph_search(problem, h)
+def greedy_search(problem, h = None):
+    """f(n) = h(n)"""
+    h = memoize(h or problem.h, 'h')
+    return best_first_graph_search(problem, h)
 
-
-#b1 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
-b1 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O']]
+b1 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
+#b1 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O']]
 #sol2 = best_first_graph_search(solitaire(b1), solitaire(b1).h)
 
 #b1 = [["O","O","O","X","X","X"],
-#["O","_","O","O","O","O"],
-#["O","O","O","O","O","O"],
-#["O","O","O","O","O","O"]]
+# ["O","_","O","O","O","O"],
+# ["O","O","O","O","O","O"],
+# ["O","O","O","O","O","O"]]
 
 #b1 = [['X','_','_','_','X'],
 #['_','_','_','_','O'],
@@ -282,25 +323,20 @@ b1 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O',
 #['O','O','O','O','O'],
 #['X','O','O','O','X']]
 
-#b1 = [["O","O","O","X"],
-#["O","O","O","O"],
-#["O","_","O","O"],
-#["O","O","O","O"]]
+# b1 = [["O","O","O","X"],
+# ["O","O","O","O"],
+# ["O","_","O","O"],
+# ["O","O","O","O"]]
 
-#b1 = [["X","X","O","O","O","O","O","X","X"],
-#["X","X","O","O","O","O","O","X","X"],
-#["O","O","O","O","O","O","O","O","O"],
-#["O","O","O","O","O","O","O","O","O"],
-#["O","O","O","O","_","O","O","O","O"],
-#["O","O","O","O","O","O","O","O","O"],
-#["O","O","O","O","O","O","O","O","O"],
-#["X","X","O","O","O","O","O","X","X"],
-#["X","X","O","O","O","O","O","X","X"]]
-
-# print("\nBoard moves: " + str(board_moves(b1)))
-# print("\nPerformed move: " + str(board_perform_move(b1,[(0, 2), (0, 0)])))
-# print("\nb1: " + str(b1))
-
+# b1 = [["X","X","O","O","O","O","O","X","X"],
+# ["X","X","O","O","O","O","O","X","X"],
+# ["O","O","O","O","O","O","O","O","O"],
+# ["O","O","O","O","O","O","O","O","O"],
+# ["O","O","O","O","_","O","O","O","O"],
+# ["O","O","O","O","O","O","O","O","O"],
+# ["O","O","O","O","O","O","O","O","O"],
+# ["X","X","O","O","O","O","O","X","X"],
+# ["X","X","O","O","O","O","O","X","X"]]
 
 # recursive_best_first_search
 # astar_search
@@ -316,49 +352,8 @@ sol2 = astar_search(solitaire(b1))
 #else:
 #    print("No solution")
 
-
 #snapshot = tracemalloc.take_snapshot()
 #display_top(snapshot)
 
-
-#sol2 = recursive_best_first_search(solitaire(b1)).solution()
-# sol1 = depth_limited_search(solitaire(b1)).solution()
-
-#print(str(sol2) + "\n\n")
-# print(str(sol1) + "\n\n")
-
-
-#same_parity = 0
-#isolated = 0
-#corners = 0
-
-#for row in range(len(b1)):
-#    for column in range(len(b1[row])):
-#        if is_peg(b1[row][column]):
-#            if is_corner(row, column, b1):
-#                corners += 1
-#            if is_isolated(row, column, b1):
-#                isolated += 1
-#            if column % 2 == row % 2:
-#                same_parity += 1
-
-#print(str(isolated) + " " + str(corners) + " " + str(same_parity))
-
-#
-# b2 = deepcopy(b1)
-#
-
-#
-# print(str(b2) + "\n\n")
-#
-
-# for move in sol1:
-#     b1 = board_perform_move(b1,move)
-
-
-# compare_searchers([solitaire(b1)], 'idk')
-
-#snapshot = tracemalloc.take_snapshot()
-#display_top(snapshot)
 
 print("--- %s seconds ---" % (time.time() - start_time))
