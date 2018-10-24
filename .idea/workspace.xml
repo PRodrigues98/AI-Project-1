@@ -1,8 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
-  <component name="BookmarkManager">
-    <bookmark url="file://$PROJECT_DIR$/solitaire.py" line="364" mnemonic="3" />
-  </component>
   <component name="ChangeListManager">
     <list default="true" id="031c24d8-cd18-4fed-af29-b1ff2a10eb50" name="Default" comment="">
       <change beforePath="$PROJECT_DIR$/solitaire.py" beforeDir="false" afterPath="$PROJECT_DIR$/solitaire.py" afterDir="false" />
@@ -18,33 +15,33 @@
       <usages-collector id="statistics.lifecycle.project">
         <counts>
           <entry key="project.closed" value="6" />
-          <entry key="project.open.time.0" value="1" />
+          <entry key="project.open.time.0" value="2" />
           <entry key="project.open.time.10" value="3" />
           <entry key="project.open.time.4" value="1" />
           <entry key="project.open.time.7" value="1" />
           <entry key="project.open.time.8" value="1" />
-          <entry key="project.opened" value="7" />
+          <entry key="project.opened" value="8" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="py" value="3266" />
+          <entry key="py" value="3626" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Python" value="3266" />
+          <entry key="Python" value="3626" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
-          <entry key="Python" value="5" />
+          <entry key="Python" value="6" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages" />
       <usages-collector id="statistics.file.extensions.open">
         <counts>
-          <entry key="py" value="5" />
+          <entry key="py" value="6" />
         </counts>
       </usages-collector>
     </session>
@@ -80,11 +77,6 @@
               <caret line="7" column="1" selection-start-line="7" selection-start-column="1" selection-end-line="7" selection-end-column="1" />
               <folding>
                 <element signature="e#0#20#0" expanded="true" />
-                <element signature="e#3597#3696#0" />
-                <element signature="e#3738#4024#0" />
-                <element signature="e#4068#4523#0" />
-                <element signature="e#4611#6897#0" />
-                <marker date="1540391688174" expanded="true" signature="2402:2653" ph="..." />
               </folding>
             </state>
           </provider>
@@ -93,8 +85,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/search.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="6613">
-              <caret line="399" column="58" selection-start-line="399" selection-start-column="58" selection-end-line="399" selection-end-column="58" />
+            <state relative-caret-position="190">
+              <caret line="219" column="28" selection-start-line="219" selection-start-column="4" selection-end-line="219" selection-end-column="28" />
             </state>
           </provider>
         </entry>
@@ -105,7 +97,6 @@
     <findStrings>
       <find>board.length</find>
       <find>move_</find>
-      <find>depth_</find>
       <find>header</find>
       <find>print_table</find>
       <find>recursive_best_first_search</find>
@@ -123,6 +114,10 @@
       <find>calc_diff_distance</find>
       <find>calc_sum_distance_from</find>
       <find>calc_new_average_distance</find>
+      <find>state</find>
+      <find>get_num_corners</find>
+      <find>depth</find>
+      <find>depth_</find>
     </findStrings>
   </component>
   <component name="Git.Settings">
@@ -230,8 +225,8 @@
     <frame x="-7" y="-7" width="1295" height="695" extended-state="6" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49746192" visible="true" weight="0.11128776" />
-      <window_info id="Structure" order="1" sideWeight="0.5025381" side_tool="true" visible="true" weight="0.11128776" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.49492386" visible="true" weight="0.11128776" />
+      <window_info id="Structure" order="1" sideWeight="0.50507617" side_tool="true" visible="true" weight="0.11128776" />
       <window_info id="Favorites" order="2" sideWeight="0.5017794" side_tool="true" weight="0.11128776" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" />
@@ -253,25 +248,20 @@
     <option name="myLimit" value="2678400000" />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/search.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="190">
+          <caret line="219" column="28" selection-start-line="219" selection-start-column="4" selection-end-line="219" selection-end-column="28" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/solitaire.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="119">
           <caret line="7" column="1" selection-start-line="7" selection-start-column="1" selection-end-line="7" selection-end-column="1" />
           <folding>
             <element signature="e#0#20#0" expanded="true" />
-            <element signature="e#3597#3696#0" />
-            <element signature="e#3738#4024#0" />
-            <element signature="e#4068#4523#0" />
-            <element signature="e#4611#6897#0" />
-            <marker date="1540391688174" expanded="true" signature="2402:2653" ph="..." />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/search.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="6613">
-          <caret line="399" column="58" selection-start-line="399" selection-start-column="58" selection-end-line="399" selection-end-column="58" />
         </state>
       </provider>
     </entry>

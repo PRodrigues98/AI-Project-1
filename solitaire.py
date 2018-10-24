@@ -255,16 +255,21 @@ class sol_state():
 class solitaire(Problem):
     """   Models a Solitaire problem as a satisfaction problem.
     A solution cannot have more than 1 peg left on the board.   """
-    __slots__ = 'board'
+    __slots__ = ('board', 'num_nos_gerados', 'num_nos_expandidos')
 
     def __init__(self, board):
         super().__init__(sol_state(board))
         self.board = board
+        self.num_nos_expandidos = 0
+        self.num_nos_gerados = 0
 
     def actions(self, state):
-        return board_moves(state.get_board())
+        moves = board_moves(state.get_board())
+        self.num_nos_gerados += len(moves)
+        return moves
 
     def result(self, state, action):
+        self.num_nos_expandidos += 1
         board = state.get_board()
         new_board = board_perform_move(board, action)
 
@@ -276,14 +281,13 @@ class solitaire(Problem):
                 for column in range(len(new_board[0])):
                     if is_peg(new_board[row][column]):
                         new_first_empty_slot = make_pos(row, column)
-                        new_average_distance = calc_sum_distance_from(new_board, row, column) / (state.get_num_pegs() - 1)
-                        if new_average_distance < 0 or new_average_distance > state.get_num_pegs():
-                            sys.exit('np')
-                        return sol_state(new_board, state.get_num_pegs() - 1, new_average_distance, new_num_occupied_corners, state.get_num_corners(), new_num_isolated, new_first_empty_slot)
+                        new_average_distance = calc_sum_distance_from(new_board, row, column) / (
+                                    state.get_num_pegs() - 1)
+                        return sol_state(new_board, state.get_num_pegs() - 1, new_average_distance,
+                                         new_num_occupied_corners, state.get_num_corners(), new_num_isolated,
+                                         new_first_empty_slot)
         else:
             new_average_distance = (state.get_average_distance() * state.get_num_pegs() + calc_diff_distance(state.get_first_empty_slot(), move_initial(action), move_final(action))) / (state.get_num_pegs() - 1)
-            if new_average_distance < 0 or new_average_distance > state.get_num_pegs():
-                sys.exit('np')
             return sol_state(new_board, state.get_num_pegs() - 1, new_average_distance, new_num_occupied_corners, state.get_num_corners(), new_num_isolated, state.get_first_empty_slot())
 
     def goal_test(self, state):
@@ -295,30 +299,13 @@ class solitaire(Problem):
     def h(self, node):
         """Needed for informed search."""
 
-        h = node.state.get_average_distance()
-
-        #print(h)
+        h = node.state.get_average_distance() * len(node.state.board) + node.state.get_num_occupied_corners() * len(node.state.board) * len(node.state.board[0]) + node.state.get_num_isolated() * len(node.state.board) * len(node.state.board[0])
 
         if node.state.get_num_pegs() == 1:
             return 0
         else:
             return h
 
-        # distance_weight = 1
-        # corner_weight = 1
-        # board = node.state.board
-        # max_distance = 0
-
-        #for row in range(len(board)):
-        #    for column in range(len(board[0])):
-        #        if is_peg(board[row][column]):
-        #            new_distance = calc_sum_distance_from(board, row, column)[1]
-        #            if new_distance > max_distance:
-        #                max_distance = new_distance
-
-        # h_distance = node.state.get_average_distance() / max_distance * distance_weight
-        # h_corner = (node.state.get_num_occupied_corners() * corner_weight / node.state.get_num_corners())
-        # return (node.state.get_num_pegs() - 1) * ((h_distance + h_corner) / (2 + distance_weight + corner_weight))
 
 
 def greedy_search(problem, h = None):
@@ -326,58 +313,32 @@ def greedy_search(problem, h = None):
     h = memoize(h or problem.h, 'h')
     return best_first_graph_search(problem, h)
 
-#b1 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
-#b1 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O']]
-#sol2 = best_first_graph_search(solitaire(b1), solitaire(b1).h)
+#b1 = entrega31 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
+#b1 = entrega32 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O']]
 
-#b1 = [["O","O","O","X","X","X"],
-# ["O","_","O","O","O","O"],
-# ["O","O","O","O","O","O"],
-# ["O","O","O","O","O","O"]]
+#test1 = [["_","O","O","O","_"], ["O","_","O","_","O"], ["_","O","_","O","_"], ["O","_","O","_","_"], ["_","O","_","_","_"]]
 
-#b1 = [['X','_','_','_','X'],
-#['_','_','_','_','O'],
-#['O','O','_','O','_'],
-#['_','_','_','_','_'],
-#['X','_','_','_','X']]
+#test2 = [["O","O","O","X"], ["O","O","O","O"], ["O","_","O","O"], ["O","O","O","O"]]
 
-#b1 = [['X','O','O','O','X'],
-#['O','O','O','O','O'],
-#['O','O','_','O','O'],
-#['O','O','O','O','O'],
-#['X','O','O','O','X']]
+#test3 = [["O","O","O","X","X"], ["O","O","O","O","O"], ["O","_","O","_","O"], ["O","O","O","O","O"]]
 
-# b1 = [["O","O","O","X"],
-# ["O","O","O","O"],
-# ["O","_","O","O"],
-# ["O","O","O","O"]]
+#test4 = [["O","O","O","X","X","X"], ["O","_","O","O","O","O"], ["O","O","O","O","O","O"], ["O","O","O","O","O","O"]]
 
-# b1 = [["X","X","O","O","O","O","O","X","X"],
-# ["X","X","O","O","O","O","O","X","X"],
-# ["O","O","O","O","O","O","O","O","O"],
-# ["O","O","O","O","O","O","O","O","O"],
-# ["O","O","O","O","_","O","O","O","O"],
-# ["O","O","O","O","O","O","O","O","O"],
-# ["O","O","O","O","O","O","O","O","O"],
-# ["X","X","O","O","O","O","O","X","X"],
-# ["X","X","O","O","O","O","O","X","X"]]
-
-# recursive_best_first_search
-# astar_search
-# greedy_search
+#test5 = [["X","X","O","O","O","O","O","X","X"], ["X","X","O","O","O","O","O","X","X"], ["O","O","O","O","O","O","O","O","O"], ["O","O","O","O","O","O","O","O","O"], ["O","O","O","O","_","O","O","O","O"], ["O","O","O","O","O","O","O","O","O"], ["O","O","O","O","O","O","O","O","O"], ["X","X","O","O","O","O","O","X","X"], ["X","X","O","O","O","O","O","X","X"]]
 #sol2 = astar_search(solitaire(b1))
+#num = 0
+#print('DFS')
+#for test in (test1, test2, test3, test4, test5):
+#    start_time = time.time()
+#    sol1 = solitaire(test)
+#    sol2 = astar_search(sol1)
+#    print("Test" + str(num + 1) + " --- %s seconds --- " % (time.time() - start_time) + " --- %s Nos Gerados --- " % sol1.num_nos_gerados + " --- %s Nos Expandidos --- " % sol1.num_nos_expandidos)
+#    num += 1
 
-#if sol2 != None:
-#    sol2 = sol2.solution()
-#    for move in sol2:
-#        b1 = board_perform_move(b1, move)
-#        #print_board(b1)
-#    print("\n\n")
-#else:
-#    print("No solution")
+#tests:
+# depth_first_tree_search
+# greedy_search
+# astar_search
 
 #snapshot = tracemalloc.take_snapshot()
 #display_top(snapshot)
-
-
-#print("--- %s seconds ---" % (time.time() - start_time))
