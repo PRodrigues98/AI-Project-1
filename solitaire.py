@@ -3,8 +3,6 @@ from utils import *
 from copy import deepcopy
 import time
 
-#start_time = time.time()
-
 
 # TAI content
 def c_peg():
@@ -178,24 +176,31 @@ class sol_state:
     def get_num_corners(self):
         return self.num_corners
 
+
 class solitaire(Problem):
     """   Models a Solitaire problem as a satisfaction problem.
     A solution cannot have more than 1 peg left on the board.   """
-    __slots__ = 'board'
+    __slots__ = ('board', 'num_nos_gerados', 'num_nos_expandidos')
 
     def __init__(self, board):
         super().__init__(sol_state(board))
         self.board = board
+        self.num_nos_gerados = 0
+        self.num_nos_expandidos = 0
 
     def actions(self, state):
-        return board_moves(state.get_board())
+        moves = state.get_board()
+        self.num_nos_gerados += len(moves)
+        return board_moves(moves)
 
     def result(self, state, action):
+        self.num_nos_expandidos += 1
         board = state.get_board()
-
         new_num_corners = state.get_num_corners() - is_corner(pos_l(move_initial(action)), pos_c(move_initial(action)), board) + is_corner(pos_l(move_final(action)), pos_c(move_final(action)), board)
-        new_average_distance = calc_new_average_distance(state.get_average_distance() * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), state.get_board(), move_initial(action), move_final(action)) / ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2)
-
+        if state.get_num_pegs() - 1 != 1:
+            new_average_distance = calc_new_average_distance(state.get_average_distance() * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), state.get_board(), move_initial(action), move_final(action)) / (((state.get_num_pegs() - 1) ** 2 - (state.get_num_pegs() - 1)) // 2)
+        else:
+            new_average_distance = 0
         return sol_state(board_perform_move(board, action), state.get_num_pegs() - 1, new_average_distance, new_num_corners)
 
     def goal_test(self, state):
@@ -206,9 +211,8 @@ class solitaire(Problem):
 
     def h(self, node):
         """Needed for informed search."""
-        if node.state.get_average_distance() < 0:
-            sys.exit('NO')
-        return node.state.get_average_distance() + len(self.board) * len(self.board[0]) * node.state.get_num_corners() #+ abs(node.state.get_class_difference()) #node.state.get_average_distance() #  #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
+        #print(node.state.get_average_distance() + (len(self.board) * len(self.board[0])) * (len(self.board) * len(self.board[0])) * node.state.get_num_corners())
+        return node.state.get_average_distance() + 2*(len(self.board) * len(self.board[0])) * node.state.get_num_corners() #+ abs(node.state.get_class_difference()) #node.state.get_average_distance() #  #max(node.state.get_num_corners() + node.state.get_num_isolated(), abs(node.state.get_class_difference()))
 
 
 def greedy_search(problem, h = None):
@@ -220,15 +224,23 @@ def greedy_search(problem, h = None):
 #b1 = entrega31 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
 #b1 = entrega32 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O']]
 
-#b1 = test1 = [["_","O","O","O","_"], ["O","_","O","_","O"], ["_","O","_","O","_"], ["O","_","O","_","_"], ["_","O","_","_","_"]]
+test1 = [["_","O","O","O","_"], ["O","_","O","_","O"], ["_","O","_","O","_"], ["O","_","O","_","_"], ["_","O","_","_","_"]]
 
-#b1 = test2 = [["O","O","O","X"], ["O","O","O","O"], ["O","_","O","O"], ["O","O","O","O"]]
+test2 = [["O","O","O","X"], ["O","O","O","O"], ["O","_","O","O"], ["O","O","O","O"]]
 
-#b1 = test3 = [["O","O","O","X","X"], ["O","O","O","O","O"], ["O","_","O","_","O"], ["O","O","O","O","O"]]
+test3 = [["O","O","O","X","X"], ["O","O","O","O","O"], ["O","_","O","_","O"], ["O","O","O","O","O"]]
 
-#b1 = test4 = [["O","O","O","X","X","X"], ["O","_","O","O","O","O"], ["O","O","O","O","O","O"], ["O","O","O","O","O","O"]]
+test4 = [["O","O","O","X","X","X"], ["O","_","O","O","O","O"], ["O","O","O","O","O","O"], ["O","O","O","O","O","O"]]
 
 #sol2 = astar_search(solitaire(b1))
+num = 0
+print('A*')
+for test in (test1, test2, test3, test4):
+    start_time = time.time()
+    sol1 = solitaire(test)
+    sol2 = astar_search(sol1)
+    print("Test" + str(num + 1) + " --- %s seconds --- " % (time.time() - start_time) + " --- %s Nos Gerados --- " % sol1.num_nos_gerados + " --- %s Nos Expandidos --- " % sol1.num_nos_expandidos)
+    num += 1
 
 #tests:
 # depth_first_tree_search
@@ -238,4 +250,3 @@ def greedy_search(problem, h = None):
 #snapshot = tracemalloc.take_snapshot()
 #display_top(snapshot)
 
-#print("--- %s seconds ---" % (time.time() - start_time))
