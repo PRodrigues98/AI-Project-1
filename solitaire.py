@@ -52,11 +52,11 @@ def make_move (i, f):
     return [i, f]
 
 
-def move_initial (move):
+def move_initial(move):
     return move[0]
 
 
-def move_final (move):
+def move_final(move):
     return move[1]
 
 
@@ -94,6 +94,13 @@ def board_perform_move(board, move):
     return new_board
 
 
+def calc_diff_distance(pivot, move_beg, move_end):
+    move_middle = make_pos((pos_l(move_beg) + pos_l(move_end)) // 2, (pos_c(move_beg) + pos_c(move_end)) // 2)
+
+    return abs(pos_l(move_end) - pos_l(pivot)) + abs(pos_c(move_end) - pos_c(pivot)) - (abs(pos_l(move_beg) - pos_l(pivot)) + abs(pos_c(move_beg) - pos_c(pivot))) - (abs(pos_l(move_middle) - pos_l(pivot)) + abs(pos_c(move_middle) - pos_c(pivot)))
+
+
+
 def calc_new_average_distance(sum_distance, board, move_beg, move_end):
 
     move_middle = make_pos((pos_l(move_beg) + pos_l(move_end)) // 2, (pos_c(move_beg) + pos_c(move_end)) // 2)
@@ -112,20 +119,13 @@ def calc_new_average_distance(sum_distance, board, move_beg, move_end):
 
 def calc_sum_distance_from(board, row, column):
 
-    start_column = column + 1
     sum_distance = 0
-    max_distance = 0
-    for row2 in range(row, len(board)):
-        for column2 in range(start_column, len(board[row2])):
+
+    for row2 in range(len(board)):
+        for column2 in range(len(board[row2])):
             if is_peg(board[row2][column2]):
-                distance = abs(row - row2) + abs(column - column2)
-                sum_distance += distance # Lower bound of moves necessary to bring these two pegs together
-                if distance > max_distance:
-                    max_distance = distance
-
-        start_column = 0
-
-    return sum_distance, max_distance
+                sum_distance += abs(row - row2) + abs(column - column2) # Lower bound of moves necessary to bring these two pegs together
+    return sum_distance
 
 
 def print_board(board):
@@ -143,6 +143,7 @@ def is_corner(row, column, board):
 
     return False
 
+
 def is_isolated(row, column, board):
 
     if (row >= 0 and column == 0) or (column > 0 and is_empty(board[row][column - 1])):
@@ -152,6 +153,7 @@ def is_isolated(row, column, board):
                     return not is_corner(row, column, board)
 
     return False
+
 
 def calc_new_isolated(num_isolated, old_board, new_board, move_beg, move_end):
 
@@ -196,16 +198,18 @@ def calc_new_isolated(num_isolated, old_board, new_board, move_beg, move_end):
     #    sys.exit('oh nono')
     return num_isolated + isolated_diff
 
-class sol_state():
-    __slots__ = ('board', 'num_pegs', 'average_distance', 'num_corners', 'num_occupied_corners', 'num_isolated')
 
-    def __init__(self, board, num_pegs = 0, average_distance = 0, num_occupied_corners = 0, num_corners = 0, num_isolated = 0):
+class sol_state():
+    __slots__ = ('board', 'num_pegs', 'average_distance', 'num_corners', 'num_occupied_corners', 'num_isolated', 'first_empty_slot')
+
+    def __init__(self, board, num_pegs = 0, average_distance = 0, num_occupied_corners = 0, num_corners = 0, num_isolated = 0, first_empty_slot = None):
         self.board = board
         self.num_pegs = num_pegs
         self.average_distance = average_distance
         self.num_occupied_corners = num_occupied_corners
         self.num_corners = num_corners
         self.num_isolated = num_isolated
+        self.first_empty_slot = first_empty_slot
 
         if self.num_pegs == 0:
             for row in range(len(board)):
@@ -216,13 +220,13 @@ class sol_state():
                             self.num_occupied_corners += 1
                         if is_isolated(row, column, board):
                             self.num_isolated += 1
-                        res = calc_sum_distance_from(board, row, column)
-                        self.average_distance += res[0]
+                        if not self.first_empty_slot:
+                            self.average_distance = calc_sum_distance_from(board, row, column)
+                            self.first_empty_slot = make_pos(row, column)
                     if not is_blocked(board[row][column]) and is_corner(row, column, board):
                         self.num_corners += 1
-
-            if ((self.num_pegs ** 2 - self.num_pegs) // 2) != 0:
-                self.average_distance /= ((self.num_pegs ** 2 - self.num_pegs) // 2)
+            if self.num_pegs != 0:
+                self.average_distance /= self.num_pegs
 
     def __lt__(self, state):
         return self.num_pegs > state.get_num_pegs()
@@ -245,6 +249,9 @@ class sol_state():
     def get_num_occupied_corners(self):
         return self.num_occupied_corners
 
+    def get_first_empty_slot(self):
+        return self.first_empty_slot
+
 class solitaire(Problem):
     """   Models a Solitaire problem as a satisfaction problem.
     A solution cannot have more than 1 peg left on the board.   """
@@ -262,13 +269,22 @@ class solitaire(Problem):
         new_board = board_perform_move(board, action)
 
         new_num_occupied_corners = state.get_num_occupied_corners() - is_corner(pos_l(move_initial(action)), pos_c(move_initial(action)), board) + is_corner(pos_l(move_final(action)), pos_c(move_final(action)), board)
-        
-        if state.get_num_pegs() != 2:
-            new_average_distance = calc_new_average_distance(state.get_average_distance() * ((state.get_num_pegs() ** 2 - state.get_num_pegs()) // 2), state.get_board(), move_initial(action), move_final(action)) / (((state.get_num_pegs() - 1) ** 2 - (state.get_num_pegs() - 1)) // 2)
-        else:
-            new_average_distance = 0
         new_num_isolated = calc_new_isolated(state.get_num_isolated(), board, new_board, move_initial(action), move_final(action))
-        return sol_state(new_board, state.get_num_pegs() - 1, new_average_distance, new_num_occupied_corners, state.get_num_corners())
+
+        if move_initial(action) == state.get_first_empty_slot() or move_final(action) == state.get_first_empty_slot():
+            for row in range(len(new_board)):
+                for column in range(len(new_board[0])):
+                    if is_peg(new_board[row][column]):
+                        new_first_empty_slot = make_pos(row, column)
+                        new_average_distance = calc_sum_distance_from(new_board, row, column) / (state.get_num_pegs() - 1)
+                        if new_average_distance < 0 or new_average_distance > state.get_num_pegs():
+                            sys.exit('np')
+                        return sol_state(new_board, state.get_num_pegs() - 1, new_average_distance, new_num_occupied_corners, state.get_num_corners(), new_num_isolated, new_first_empty_slot)
+        else:
+            new_average_distance = (state.get_average_distance() * state.get_num_pegs() + calc_diff_distance(state.get_first_empty_slot(), move_initial(action), move_final(action))) / (state.get_num_pegs() - 1)
+            if new_average_distance < 0 or new_average_distance > state.get_num_pegs():
+                sys.exit('np')
+            return sol_state(new_board, state.get_num_pegs() - 1, new_average_distance, new_num_occupied_corners, state.get_num_corners(), new_num_isolated, state.get_first_empty_slot())
 
     def goal_test(self, state):
         return state.get_num_pegs() == 1
@@ -279,25 +295,7 @@ class solitaire(Problem):
     def h(self, node):
         """Needed for informed search."""
 
-        board = node.state.board
-        num_pegs_can_move = 0
-        n = 0
-        for row in range(len(board)):
-            for column in range(len(board[0])):
-                can_move = False
-                if is_peg(board[row][column]):
-                    if column > 1 and is_peg(board[row][column - 1]) and is_empty(board[row][column - 2]):
-                        can_move = True
-                    if column < len(board[row]) - 2 and is_peg(board[row][column + 1]) and is_empty(board[row][column + 2]):
-                        can_move = True
-                    if row < len(board) - 2 and is_peg(board[row + 1][column]) and is_empty(board[row + 2][column]):
-                        can_move = True
-                    if row > 1 and is_peg(board[row - 1][column]) and is_empty(board[row - 2][column]):
-                        can_move = True
-                if can_move:
-                    num_pegs_can_move += 1
-
-        h = node.state.get_num_pegs() - num_pegs_can_move
+        h = node.state.get_average_distance()
 
         #print(h)
 
