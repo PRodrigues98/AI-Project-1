@@ -1,7 +1,6 @@
 from search import *
 from utils import *
 from copy import deepcopy
-import time
 
 # TAI content
 def c_peg ():
@@ -163,31 +162,51 @@ def calc_new_isolated(num_isolated, old_board, new_board, move_beg, move_end):
     return num_isolated + isolated_diff
 
 
+def calc_atributes(board):
+    num_pegs = 0
+    num_occupied_corners = 0
+    num_isolated = 0
+    first_peg_slot = None
+    average_distance = 0
+
+    for row in range(len(board)):
+        for column in range(len(board[0])):
+            if is_peg(board[row][column]):
+                num_pegs += 1
+                if is_corner(row, column, board):
+                    num_occupied_corners += 1
+                if is_isolated(row, column, board):
+                    num_isolated += 1
+                if not first_peg_slot:
+                    average_distance = calc_sum_distance_from(board, row, column)
+                    first_peg_slot = make_pos(row, column)
+
+    if num_pegs != 0:
+        average_distance /= num_pegs
+
+    return num_pegs, num_occupied_corners, num_isolated, first_peg_slot, average_distance
+
+def find_new_first_peg(board):
+
+    for row in range(len(board)):
+        for column in range(len(board[0])):
+            if is_peg(board[row][column]):
+                return make_pos(row, column)
+
+
 class sol_state():
     __slots__ = ('board', 'num_pegs', 'average_distance', 'num_occupied_corners', 'num_isolated', 'first_peg_slot')
 
     def __init__(self, board, num_pegs = 0, average_distance = 0, num_occupied_corners = 0, num_isolated = 0, first_peg_slot = None):
         self.board = board
         self.num_pegs = num_pegs
-        self.average_distance = average_distance
         self.num_occupied_corners = num_occupied_corners
         self.num_isolated = num_isolated
         self.first_peg_slot = first_peg_slot
+        self.average_distance = average_distance
 
         if self.num_pegs == 0:
-            for row in range(len(board)):
-                for column in range(len(board[0])):
-                    if is_peg(board[row][column]):
-                        self.num_pegs += 1
-                        if is_corner(row, column, board):
-                            self.num_occupied_corners += 1
-                        if is_isolated(row, column, board):
-                            self.num_isolated += 1
-                        if not self.first_peg_slot:
-                            self.average_distance = calc_sum_distance_from(board, row, column)
-                            self.first_peg_slot = make_pos(row, column)
-            if self.num_pegs != 0:
-                self.average_distance /= self.num_pegs
+            self.num_pegs, self.num_occupied_corners, self.num_isolated, self.first_peg_slot, self.average_distance = calc_atributes(self.board)
 
     def __lt__(self, state):
         return self.num_pegs > state.get_num_pegs()
@@ -214,20 +233,16 @@ class sol_state():
 class solitaire(Problem):
     """   Models a Solitaire problem as a satisfaction problem.
     A solution cannot have more than 1 peg left on the board.   """
-    __slots__ = ('board', 'num_nos_gerados', 'num_nos_expandidos')
+    __slots__ = ('board')
 
     def __init__(self, board):
         super().__init__(sol_state(board))
         self.board = board
-        self.num_nos_expandidos = 0
-        self.num_nos_gerados = 0
 
     def actions(self, state):
-        moves = board_moves(state.get_board())
-        return moves
+        return board_moves(state.get_board())
 
     def result(self, state, action):
-        self.num_nos_expandidos += 1
         board = state.get_board()
         new_board = board_perform_move(board, action)
 
@@ -235,21 +250,15 @@ class solitaire(Problem):
         new_num_isolated = calc_new_isolated(state.get_num_isolated(), board, new_board, move_initial(action), move_final(action))
 
         if move_initial(action) == state.get_first_peg_slot() or move_final(action) == state.get_first_peg_slot():
-            for row in range(len(new_board)):
-                for column in range(len(new_board[0])):
-                    if is_peg(new_board[row][column]):
-                        new_first_peg_slot = make_pos(row, column)
-                        new_average_distance = calc_sum_distance_from(new_board, row, column) / (
-                                    state.get_num_pegs() - 1)
-                        return sol_state(new_board, state.get_num_pegs() - 1, new_average_distance,
-                                         new_num_occupied_corners, new_num_isolated,
-                                         new_first_peg_slot)
+            new_first_peg_slot = find_new_first_peg(new_board)
+            new_average_distance = calc_sum_distance_from(new_board, pos_l(new_first_peg_slot), pos_c(new_first_peg_slot)) / (state.get_num_pegs() - 1)
         else:
             new_average_distance = (state.get_average_distance() * state.get_num_pegs() + calc_diff_distance(state.get_first_peg_slot(), move_initial(action), move_final(action))) / (state.get_num_pegs() - 1)
-            return sol_state(new_board, state.get_num_pegs() - 1, new_average_distance, new_num_occupied_corners, new_num_isolated, state.get_first_peg_slot())
+            new_first_peg_slot = state.get_first_peg_slot()
+
+        return sol_state(new_board, state.get_num_pegs() - 1, new_average_distance, new_num_occupied_corners, new_num_isolated, new_first_peg_slot)
 
     def goal_test(self, state):
-        self.num_nos_gerados += 1
         return state.get_num_pegs() == 1
 
     def path_cost(self, c, state1, action, state2):
@@ -264,42 +273,3 @@ class solitaire(Problem):
             return 0
         else:
             return h
-
-
-def greedy_search(problem, h = None):
-    """f(n) = h(n)"""
-    h = memoize(h or problem.h, 'h')
-    return best_first_graph_search(problem, h)
-
-#b1 = entrega31 = [["O","O","O","X","X"],["O","O","O","O","O"],["O","_","O","_","O"],["O","O","O","O","O"]]
-#b1 = entrega32 = [['O', 'O', 'O', 'X', 'X', 'X'], ['O', '_', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O'], ['O', 'O', 'O', 'O', 'O', 'O']]
-
-test1 = [["_","O","O","O","_"], ["O","_","O","_","O"], ["_","O","_","O","_"], ["O","_","O","_","_"], ["_","O","_","_","_"]]
-
-test2 = [["O","O","O","X"], ["O","O","O","O"], ["O","_","O","O"], ["O","O","O","O"]]
-
-test3 = [["O","O","O","X","X"], ["O","O","O","O","O"], ["O","_","O","_","O"], ["O","O","O","O","O"]]
-
-test4 = [["O","O","O","X","X","X"], ["O","_","O","O","O","O"], ["O","O","O","O","O","O"], ["O","O","O","O","O","O"]]
-
-for searcher in (greedy_search, astar_search): # , depth_first_tree_search
-    print(str(searcher))
-    num = 0
-    for test in (test1, test2, test3, test4):
-        start_time = time.time()
-        sol1 = solitaire(test)
-        sol2 = searcher(sol1)
-        print("Test" + str(num + 1) + " --- %s seconds --- " % (time.time() - start_time) + " --- %s Nos Gerados --- " % sol1.num_nos_gerados + " --- %s Nos Expandidos --- " % sol1.num_nos_expandidos)
-        num += 1
-
-#tests:
-# depth_first_tree_search
-# greedy_search
-# astar_search
-
-#snapshot = tracemalloc.take_snapshot()
-#display_top(snapshot)
-
-#compare_searchers([solitaire(test1), solitaire(test2), solitaire(test3), solitaire(test4)],
-#                  ['Searcher', 'Test1', 'Test2', 'Test3', 'Test4'],
-#                  [greedy_search, astar_search])
