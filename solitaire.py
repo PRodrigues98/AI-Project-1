@@ -258,7 +258,7 @@ class solitaire(Problem):
     def h(self, node):
         """Needed for informed search."""
 
-        h = node.state.get_average_distance() * len(node.state.board) + node.state.get_num_occupied_corners() * len(node.state.board) * len(node.state.board[0]) + node.state.get_num_isolated() * len(node.state.board) * len(node.state.board[0])
+        h = node.state.get_average_distance() * len(node.state.board) + (node.state.get_num_occupied_corners() + node.state.get_num_isolated()) * len(node.state.board) * len(node.state.board[0])
 
         if node.state.get_num_pegs() == 1:
             return 0
@@ -282,7 +282,7 @@ test3 = [["O","O","O","X","X"], ["O","O","O","O","O"], ["O","_","O","_","O"], ["
 
 test4 = [["O","O","O","X","X","X"], ["O","_","O","O","O","O"], ["O","O","O","O","O","O"], ["O","O","O","O","O","O"]]
 
-for searcher in (greedy_search, astar_search): # , depth_first_tree_search
+for searcher in (greedy_search, astar_search, depth_first_tree_search):
     print(str(searcher))
     num = 0
     for test in (test1, test2, test3, test4):
