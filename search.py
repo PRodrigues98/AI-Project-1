@@ -15,6 +15,7 @@ import math
 import random
 import sys
 import bisect
+import time
 
 infinity = float('inf')
 
@@ -1267,6 +1268,7 @@ class InstrumentedProblem(Problem):
     """Delegates to a problem, and keeps statistics."""
 
     def __init__(self, problem):
+        self.time = time.time()
         self.problem = problem
         self.succs = self.goal_tests = self.states = 0
         self.found = None
@@ -1296,7 +1298,7 @@ class InstrumentedProblem(Problem):
         return getattr(self.problem, attr)
 
     def __repr__(self):
-        return '<{:4d}/{:4d}/{:4d}/{}>'.format(self.succs, self.goal_tests,
+        return '<{:4f}/{:4d}/{:4d}/{}>'.format((time.time() - self.time), self.goal_tests,
                                                self.states, str(self.found)[:4])
 
 
